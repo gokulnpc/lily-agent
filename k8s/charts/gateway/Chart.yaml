@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gateway
+description: Lily chat gateway (Phase 0 health stub, Phase 2 SSE chat API)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

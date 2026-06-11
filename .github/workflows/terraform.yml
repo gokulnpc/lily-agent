@@ -1,0 +1,79 @@
+name: terraform
+
+on:
+  pull_request:
+    paths: ["terraform/**"]
+  push:
+    branches: [main]
+    paths: ["terraform/**"]
+
+env:
+  TF_VERSION: "1.14.7"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack:
+          - terraform/bootstrap
+          - terraform/envs/dev/infra
+          - terraform/envs/dev/platform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: fmt check
+        run: terraform fmt -check -recursive terraform/
+
+      - name: validate ${{ matrix.stack }}
+        run: |
+          terraform -chdir=${{ matrix.stack }} init -backend=false -input=false
+          terraform -chdir=${{ matrix.stack }} validate
+
+  # Read-only plan of the infra stack via GitHub OIDC. The platform stack is
+  # fmt/validate-only in CI (its providers need live cluster credentials).
+  # terraform apply NEVER runs in CI (CLAUDE.md hard stop).
+  plan-infra:
+    if: github.event_name == 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: terraform plan
+        id: plan
+        run: |
+          cd terraform/envs/dev/infra
+          terraform init -input=false
+          terraform plan -input=false -lock=false -no-color 2>&1 | tee plan.txt
+        env:
+          # Non-secret variable values for plan; the admin principal ARN is
+          # supplied via repo secret so it never lands in the repo.
+          TF_VAR_domain_name: ${{ vars.TF_DOMAIN_NAME }}
+          TF_VAR_admin_principal_arn: ${{ secrets.TF_ADMIN_PRINCIPAL_ARN }}
+          TF_VAR_public_access_cidrs: ${{ vars.TF_PUBLIC_ACCESS_CIDRS }}
+          TF_VAR_github_repository: ${{ github.repository }}
+          TF_VAR_state_bucket_name: ${{ vars.TF_STATE_BUCKET_NAME }}
+
+      - name: Comment plan on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: terraform-plan
+          path: terraform/envs/dev/infra/plan.txt

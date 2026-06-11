@@ -1,0 +1,6 @@
+# Copy to dev.auto.tfvars (gitignored — values reveal the account ID / your IP).
+domain_name         = "example.dev"
+admin_principal_arn = "arn:aws:iam::123456789012:user/your-admin-user"
+public_access_cidrs = ["203.0.113.7/32"]
+github_repository   = "your-org/lilly-agent"
+state_bucket_name   = "lily-tfstate-xxxxxxxx"

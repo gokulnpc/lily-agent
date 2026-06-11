@@ -1,0 +1,9 @@
+# Namespace-specific values for the gateway in the `agent` namespace (dev).
+# image.repository and image.tag are injected by `make deploy-gateway`.
+
+ingress:
+  enabled: true
+  # Fill in after the infra apply:
+  host: ""           # gateway.dev.<your-domain>
+  certificateArn: "" # terraform -chdir=terraform/envs/dev/infra output -raw certificate_arn
+  groupName: lily-dev

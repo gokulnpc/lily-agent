@@ -1,0 +1,3 @@
+# Copy to dev.auto.tfvars (gitignored).
+state_bucket_name = "lily-tfstate-xxxxxxxx"
+acme_email        = "you@example.com"

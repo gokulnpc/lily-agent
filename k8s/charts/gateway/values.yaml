@@ -1,0 +1,31 @@
+# Defaults — environment-specific overrides live in k8s/values/<namespace>/gateway.yaml
+replicaCount: 1
+
+image:
+  repository: "" # set by deploy (ECR URL)
+  tag: ""        # set by deploy (git sha)
+  pullPolicy: IfNotPresent
+
+containerPort: 8000
+
+serviceAccount:
+  create: true
+  # IRSA role ARN once the gateway needs AWS access (Phase 2). Empty = no annotation.
+  roleArn: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+# App workloads run on the spot pool (D17).
+nodeSelector:
+  role: stateless
+
+ingress:
+  enabled: true
+  host: ""           # e.g. gateway.dev.example.dev
+  certificateArn: "" # ACM cert from the infra stack
+  groupName: lily-dev

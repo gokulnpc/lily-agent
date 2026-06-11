@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync workspace
+        run: uv sync --frozen
+
+      - name: make check
+        run: make check
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build-only: proves the image builds on every PR. Pushes are local-only
+      # in Phase 0 (make deploy-gateway); CI deploys arrive in Phase 2.
+      - name: Build gateway image
+        run: docker build -f services/gateway/Dockerfile -t lily-gateway:ci .
