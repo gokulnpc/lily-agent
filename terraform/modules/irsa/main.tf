@@ -30,7 +30,7 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_role_policy" "inline" {
-  count = var.policy_json == null ? 0 : 1
+  count = var.create_inline_policy ? 1 : 0
 
   name   = var.role_name
   role   = aws_iam_role.this.id

@@ -47,12 +47,13 @@ data "aws_caller_identity" "current" {}
 module "irsa_alb_controller" {
   source = "../../../modules/irsa"
 
-  role_name         = "lily-dev-alb-controller"
-  oidc_provider_arn = module.eks.oidc_provider_arn
-  oidc_provider_url = module.eks.oidc_provider_url
-  namespace         = "platform"
-  service_account   = "aws-load-balancer-controller"
-  policy_json       = file("${path.module}/policies/aws-load-balancer-controller.json")
+  role_name            = "lily-dev-alb-controller"
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider_url    = module.eks.oidc_provider_url
+  namespace            = "platform"
+  service_account      = "aws-load-balancer-controller"
+  create_inline_policy = true
+  policy_json          = file("${path.module}/policies/aws-load-balancer-controller.json")
 }
 
 data "aws_iam_policy_document" "cert_manager" {
@@ -78,12 +79,13 @@ data "aws_iam_policy_document" "cert_manager" {
 module "irsa_cert_manager" {
   source = "../../../modules/irsa"
 
-  role_name         = "lily-dev-cert-manager"
-  oidc_provider_arn = module.eks.oidc_provider_arn
-  oidc_provider_url = module.eks.oidc_provider_url
-  namespace         = "platform"
-  service_account   = "cert-manager"
-  policy_json       = data.aws_iam_policy_document.cert_manager.json
+  role_name            = "lily-dev-cert-manager"
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider_url    = module.eks.oidc_provider_url
+  namespace            = "platform"
+  service_account      = "cert-manager"
+  create_inline_policy = true
+  policy_json          = data.aws_iam_policy_document.cert_manager.json
 }
 
 data "aws_iam_policy_document" "external_secrets" {
@@ -102,12 +104,13 @@ data "aws_iam_policy_document" "external_secrets" {
 module "irsa_external_secrets" {
   source = "../../../modules/irsa"
 
-  role_name         = "lily-dev-external-secrets"
-  oidc_provider_arn = module.eks.oidc_provider_arn
-  oidc_provider_url = module.eks.oidc_provider_url
-  namespace         = "platform"
-  service_account   = "external-secrets"
-  policy_json       = data.aws_iam_policy_document.external_secrets.json
+  role_name            = "lily-dev-external-secrets"
+  oidc_provider_arn    = module.eks.oidc_provider_arn
+  oidc_provider_url    = module.eks.oidc_provider_url
+  namespace            = "platform"
+  service_account      = "external-secrets"
+  create_inline_policy = true
+  policy_json          = data.aws_iam_policy_document.external_secrets.json
 }
 
 module "irsa_ebs_csi" {

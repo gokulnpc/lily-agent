@@ -23,8 +23,14 @@ variable "service_account" {
   type        = string
 }
 
+variable "create_inline_policy" {
+  description = "Whether to attach policy_json as an inline policy. Must be a static literal — policy_json content may be unknown at plan time, so count cannot derive from it."
+  type        = bool
+  default     = false
+}
+
 variable "policy_json" {
-  description = "Inline IAM policy document (JSON); null to skip"
+  description = "Inline IAM policy document (JSON); used when create_inline_policy is true"
   type        = string
   default     = null
 }
