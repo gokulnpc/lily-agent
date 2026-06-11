@@ -39,6 +39,7 @@ docs/             # PRD, DECISIONS, ADRs, runbooks
 - Secrets: env vars via External Secrets only. Never commit secrets, .env files, or AWS account IDs.
 - Python 3.12, FastAPI, pydantic v2, ruff + mypy strict, pytest. TypeScript strict, Next.js App Router, ESLint.
 - Conventional commits. Small PRs scoped to one phase task.
+- **Never run `git commit` — the owner commits.** Finish the work, run checks, then report what's ready with a suggested commit message.
 
 ## Operational guardrails (ask first — hard stops)
 - NEVER run `terraform apply`, `terraform destroy`, or create/modify cost-bearing AWS resources without explicit confirmation in that session.
