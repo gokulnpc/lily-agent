@@ -28,4 +28,4 @@ all infra state.
 
 Filled in after the one-time apply:
 
-- `state_bucket_name`: _(pending first apply)_
+- `state_bucket_name`: `lily-tfstate-a2b0623e` (applied 2026-06-11)
