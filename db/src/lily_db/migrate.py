@@ -48,7 +48,7 @@ def apply_migrations(dsn: str) -> list[str]:
     with psycopg.connect(dsn) as conn:
         for path in pending_migrations(conn):
             with conn.cursor() as cur:
-                cur.execute(path.read_text())  # type: ignore[arg-type]
+                cur.execute(path.read_text())
                 cur.execute(
                     "INSERT INTO public.schema_migrations (filename) VALUES (%s)",
                     (path.name,),

@@ -84,9 +84,9 @@ def test_lookup_normalizes_user_formatting(conn: psycopg.Connection) -> None:
     # stored generated columns make "wdt-780 saem1" find "WDT780SAEM1".
     with conn.cursor() as cur:
         cur.execute("SELECT catalog.norm_id(%s)", ("wdt-780 saem1",))
-        assert cur.fetchone() == ("WDT780SAEM1",)  # type: ignore[comparison-overlap]
+        assert cur.fetchone() == ("WDT780SAEM1",)
         cur.execute("SELECT catalog.norm_id(%s)", ("ps 11752778",))
-        assert cur.fetchone() == ("PS11752778",)  # type: ignore[comparison-overlap]
+        assert cur.fetchone() == ("PS11752778",)
 
 
 def test_upsert_bumps_last_seen_without_duplicates(conn: psycopg.Connection) -> None:

@@ -5,7 +5,7 @@
 check: ## lint + typecheck + unit tests (all services)
 	uv run ruff check .
 	uv run ruff format --check .
-	uv run mypy libs services
+	uv run mypy libs services db pipeline
 	uv run pytest
 
 fmt: ## auto-fix lint + formatting
