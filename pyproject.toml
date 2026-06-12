@@ -15,6 +15,7 @@ dependencies = [
   "lily-catalog",
   "lily-retrieval",
   "lily-orders",
+  "lily-orchestrator",
 ]
 
 [tool.uv]
@@ -36,6 +37,7 @@ members = [
   "services/catalog",
   "services/retrieval",
   "services/orders",
+  "services/orchestrator",
   "db",
   "pipeline/crawler",
   "pipeline/parsers",
@@ -53,6 +55,7 @@ lily-search = { workspace = true }
 lily-catalog = { workspace = true }
 lily-retrieval = { workspace = true }
 lily-orders = { workspace = true }
+lily-orchestrator = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -62,18 +65,18 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl", "lily_search", "lily_catalog", "lily_retrieval", "lily_orders"]
+known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl", "lily_search", "lily_catalog", "lily_retrieval", "lily_orders", "lily_orchestrator"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src", "pipeline/etl/src", "libs/search/src", "services/catalog/src", "services/retrieval/src", "services/orders/src"]
+mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src", "pipeline/etl/src", "libs/search/src", "services/catalog/src", "services/retrieval/src", "services/orders/src", "services/orchestrator/src"]
 explicit_package_bases = true
 namespace_packages = true
 
 # boto3 and selectolax ship no type stubs. Strict everywhere else.
 [[tool.mypy.overrides]]
-module = ["boto3", "boto3.*", "selectolax", "selectolax.*", "opensearchpy", "opensearchpy.*"]
+module = ["boto3", "boto3.*", "selectolax", "selectolax.*", "opensearchpy", "opensearchpy.*", "langgraph", "langgraph.*", "redis", "redis.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
