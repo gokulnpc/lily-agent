@@ -40,6 +40,23 @@ Status legend: **LOCKED** = do not change without owner sign-off · **OPEN** = n
 | — | Dev region: **us-east-1** (Bedrock availability; ACM certs reusable for CloudFront). | 2026-06-11 |
 | — | Phase 0 edge: ACM cert on ALB; **CloudFront + WAF deferred to Phase 3** (D8 target topology unchanged). See docs/adr/0001. | 2026-06-11 |
 
+## Phase 0 hardening notes (2026-06-11)
+
+Three failures hit during first platform bring-up; each fix is now in
+`terraform/envs/dev/platform/main.tf` and verified by a clean destroy → single-pass
+re-apply (112s):
+
+| Fix | Failure it addresses |
+|---|---|
+| `atomic + cleanup_on_fail + wait` on every `helm_release` | A failed install stranded the release in `failed` state, blocking every retry until manual `helm uninstall`. Atomic installs roll back to nothing. |
+| `depends_on = [helm_release.alb_controller]` on cert-manager and external-secrets | The ALB controller's **mutating webhook intercepts pod creation cluster-wide**. Charts installed concurrently with it raced its unready endpoints ("no endpoints available for service aws-load-balancer-webhook-service") and failed. Install the controller alone, then everything else. |
+| ESO cert-controller readiness window widened (period 10s × threshold 12 ≈ 2 min) | The cert-controller reports ready only after provisioning the webhook TLS secret. Chart 2.6.0's default window (20s delay + 3×5s) is too tight on first install; the probe flapped and stalled `helm --wait` until timeout. |
+
+Related convention (also in CLAUDE.md): admission webhooks and control-plane-critical
+pods are pinned to the on-demand `system` node pool — a spot reclaim of a webhook pod
+turns into cluster-wide admission failures. The chart-level `nodeSelector` does NOT
+cover webhook/cainjector/cert-controller subcomponents; each needs its own pin.
+
 ## Phases & exit criteria (work strictly in order)
 
 | Phase | Scope | Exit criteria — stop and review here |

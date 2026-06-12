@@ -37,6 +37,7 @@ docs/             # PRD, DECISIONS, ADRs, runbooks
 - Tools are plain typed Python functions in `services/*`; LangGraph only wires them. No framework types in domain code.
 - Model tiering: Haiku for guardrails/routing/rewrites, Sonnet for specialist reasoning. Use the Bedrock Converse API.
 - Secrets: env vars via External Secrets only. Never commit secrets, .env files, or AWS account IDs.
+- Admission webhooks and control-plane-critical pods run on the on-demand `system` node pool, never spot — a reclaimed webhook pod means cluster-wide admission failures. Chart-level `nodeSelector` does not cover webhook/cainjector/cert-controller subcomponents; pin each explicitly (see DECISIONS.md §Phase 0 hardening).
 - Python 3.12, FastAPI, pydantic v2, ruff + mypy strict, pytest. TypeScript strict, Next.js App Router, ESLint.
 - Conventional commits. Small PRs scoped to one phase task.
 - **Never run `git commit` — the owner commits.** Finish the work, run checks, then report what's ready with a suggested commit message.

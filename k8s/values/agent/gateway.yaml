@@ -3,7 +3,8 @@
 
 ingress:
   enabled: true
-  # Fill in after the infra apply:
-  host: ""           # gateway.dev.<your-domain>
-  certificateArn: "" # terraform -chdir=terraform/envs/dev/infra output -raw certificate_arn
+  host: gateway.dev.lily-agent.com
+  # certificateArn is injected by `make deploy-gateway` from terraform output —
+  # the ARN embeds the account ID, which is never committed (CLAUDE.md).
+  certificateArn: ""
   groupName: lily-dev

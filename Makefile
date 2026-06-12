@@ -43,16 +43,20 @@ tf-validate: ## fmt-check + init -backend=false + validate every stack
 AWS_REGION ?= us-east-1
 ECR_REGISTRY ?= $(shell aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com
 IMAGE_TAG ?= $(shell git rev-parse --short HEAD)
+# Injected at deploy time — the ARN embeds the account ID, never committed.
+CERT_ARN ?= $(shell terraform -chdir=terraform/envs/dev/infra output -raw certificate_arn)
 
 deploy-gateway: ## build, push to ECR, helm upgrade into the agent namespace
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR_REGISTRY)
-	docker build -f services/gateway/Dockerfile -t $(ECR_REGISTRY)/gateway:$(IMAGE_TAG) .
+	docker build --platform linux/amd64 -f services/gateway/Dockerfile -t $(ECR_REGISTRY)/gateway:$(IMAGE_TAG) .
 	docker push $(ECR_REGISTRY)/gateway:$(IMAGE_TAG)
 	helm upgrade --install gateway k8s/charts/gateway \
 		--namespace agent \
 		--values k8s/values/agent/gateway.yaml \
 		--set image.repository=$(ECR_REGISTRY)/gateway \
-		--set image.tag=$(IMAGE_TAG)
+		--set image.tag=$(IMAGE_TAG) \
+		--set ingress.certificateArn=$(CERT_ARN) \
+		--wait --timeout 5m
 
 # ---- Cost guards (D17) -------------------------------------------------------
 
