@@ -11,6 +11,7 @@ dependencies = [
   "lily-crawler",
   "lily-parsers",
   "lily-etl",
+  "lily-search",
 ]
 
 [tool.uv]
@@ -27,6 +28,7 @@ dev-dependencies = [
 # Placeholder dirs (README-only) must NOT be listed.
 members = [
   "libs/common",
+  "libs/search",
   "services/gateway",
   "db",
   "pipeline/crawler",
@@ -41,6 +43,7 @@ lily-db = { workspace = true }
 lily-crawler = { workspace = true }
 lily-parsers = { workspace = true }
 lily-etl = { workspace = true }
+lily-search = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -50,18 +53,18 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl"]
+known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl", "lily_search"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src", "pipeline/etl/src"]
+mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src", "pipeline/etl/src", "libs/search/src"]
 explicit_package_bases = true
 namespace_packages = true
 
 # boto3 and selectolax ship no type stubs. Strict everywhere else.
 [[tool.mypy.overrides]]
-module = ["boto3", "boto3.*", "selectolax", "selectolax.*"]
+module = ["boto3", "boto3.*", "selectolax", "selectolax.*", "opensearchpy", "opensearchpy.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

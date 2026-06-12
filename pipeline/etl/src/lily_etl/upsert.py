@@ -221,10 +221,12 @@ def upsert_symptom_index(
             cur.execute(
                 """
                 INSERT INTO catalog.symptoms
-                    (appliance_type, name, reported_by_pct, source_url, source_page_id,
-                     scraped_at, last_seen_at)
-                VALUES (%(appliance)s, %(name)s, %(pct)s, %(src)s, %(spid)s, now(), now())
+                    (appliance_type, name, description, reported_by_pct, source_url,
+                     source_page_id, scraped_at, last_seen_at)
+                VALUES (%(appliance)s, %(name)s, %(desc)s, %(pct)s, %(src)s, %(spid)s,
+                        now(), now())
                 ON CONFLICT (appliance_type, name) DO UPDATE SET
+                    description     = EXCLUDED.description,
                     reported_by_pct = EXCLUDED.reported_by_pct,
                     last_seen_at    = now(),
                     updated_at      = now()
@@ -232,6 +234,7 @@ def upsert_symptom_index(
                 {
                     "appliance": index.appliance_type,
                     "name": sym.name,
+                    "desc": sym.description,
                     "pct": sym.reported_by_pct,
                     "src": source_url + sym.url,
                     "spid": source_page_id,

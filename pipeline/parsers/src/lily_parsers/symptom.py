@@ -31,7 +31,14 @@ def parse_symptom_index(html: str, url: str) -> ParsedSymptomIndex:
         seen.add(href)
         pct_node = a.css_first(".symptom-list__reported-by")
         pct = _html.to_float(pct_node.text()) if pct_node else None
-        symptoms.append(SymptomRef(name=title, url=href, reported_by_pct=pct))
+        symptoms.append(
+            SymptomRef(
+                name=title,
+                url=href,
+                reported_by_pct=pct,
+                description=_html.text(a.css_first("p")),
+            )
+        )
 
     require(symptoms or None, page_type=_PT, field="symptoms", url=url)
     return ParsedSymptomIndex(appliance_type=appliance_type, symptoms=symptoms)

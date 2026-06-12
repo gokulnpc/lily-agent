@@ -16,7 +16,16 @@ from pathlib import Path
 
 import psycopg
 
-MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "migrations"
+def _migrations_dir() -> Path:
+    # Installed wheel ships migrations alongside the package (force-include);
+    # local dev/editable runs from the repo's db/migrations.
+    packaged = Path(__file__).resolve().parent / "migrations"
+    if packaged.is_dir():
+        return packaged
+    return Path(__file__).resolve().parents[2] / "migrations"
+
+
+MIGRATIONS_DIR = _migrations_dir()
 
 
 def default_dsn() -> str:

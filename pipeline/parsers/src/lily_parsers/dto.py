@@ -57,6 +57,7 @@ class SymptomRef:
     name: str
     url: str
     reported_by_pct: float | None
+    description: str | None = None
 
 
 @dataclass(frozen=True)

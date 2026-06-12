@@ -14,7 +14,7 @@ module "ecr" {
 
   # Extend as services gain images: orchestrator, retrieval, catalog, orders,
   # notifications, frontend.
-  repository_names = ["gateway"]
+  repository_names = ["gateway", "crawler", "etl"]
 }
 
 module "dns" {

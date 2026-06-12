@@ -93,6 +93,11 @@ output "irsa_etl_role_arn" {
   value       = module.irsa_etl.role_arn
 }
 
+output "opensearch_endpoint" {
+  description = "OpenSearch VPC endpoint (retrieval + logs index namespaces)"
+  value       = module.opensearch.endpoint
+}
+
 output "ci_plan_role_arn" {
   description = "GitHub Actions plan role — set as the AWS_PLAN_ROLE_ARN repo secret"
   value       = module.github_oidc.plan_role_arn

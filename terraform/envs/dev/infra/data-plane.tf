@@ -83,7 +83,25 @@ data "aws_iam_policy_document" "etl" {
     ]
     resources = [module.s3_sqs.index_jobs_queue_arn]
   }
-  # Bedrock (Titan embeddings) permissions arrive with the indexing step.
+
+  statement {
+    sid     = "OpenSearchIndexing"
+    actions = ["es:ESHttpGet", "es:ESHttpPut", "es:ESHttpPost", "es:ESHttpHead"]
+    # Constructed ARN (not module.opensearch.arn) to avoid a dependency cycle:
+    # the domain's access policy already references this role.
+    resources = [
+      "arn:aws:es:${var.region}:${data.aws_caller_identity.current.account_id}:domain/lily-dev/*",
+    ]
+  }
+
+  statement {
+    sid     = "BedrockTitanEmbeddings"
+    actions = ["bedrock:InvokeModel"]
+    # Titan Embeddings v2 (D3), plus cross-region inference profile prefix.
+    resources = [
+      "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0",
+    ]
+  }
 }
 
 module "irsa_etl" {
@@ -96,4 +114,15 @@ module "irsa_etl" {
   service_account      = "etl"
   create_inline_policy = true
   policy_json          = data.aws_iam_policy_document.etl.json
+}
+
+module "opensearch" {
+  source = "../../../modules/opensearch"
+
+  name                       = "lily-dev"
+  vpc_id                     = module.network.vpc_id
+  subnet_ids                 = module.network.private_subnet_ids
+  allowed_security_group_ids = [module.eks.cluster_security_group_id]
+  # The indexer (etl) signs requests; Phase 2 retrieval role joins this list.
+  access_principal_arns = [module.irsa_etl.role_arn]
 }
