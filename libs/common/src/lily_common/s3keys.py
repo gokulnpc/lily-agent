@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 from datetime import date
 
-PAGE_TYPES = frozenset({"part", "model", "symptom", "guide", "category", "other"})
+PAGE_TYPES = frozenset({"part", "model", "section", "symptom", "guide", "category", "other"})
 
 
 def url_digest(url: str) -> str:

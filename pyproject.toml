@@ -53,6 +53,11 @@ mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/craw
 explicit_package_bases = true
 namespace_packages = true
 
+# boto3 ships no type stubs; its clients are dynamic. Strict everywhere else.
+[[tool.mypy.overrides]]
+module = ["boto3", "boto3.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["libs", "services", "pipeline", "evals", "db"]
 addopts = "-q"

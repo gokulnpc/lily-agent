@@ -24,5 +24,7 @@ RUN playwright install --with-deps chrome
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 USER app
 WORKDIR /app
-# Entrypoint is set per workload (discovery vs fetcher) by the k8s command.
-CMD ["python", "-m", "lily_crawler.fetcher"]
+# Entrypoint is set per workload by the k8s command:
+#   python -m lily_crawler.runner discover
+#   python -m lily_crawler.runner fetch-worker
+CMD ["python", "-m", "lily_crawler.runner", "fetch-worker"]

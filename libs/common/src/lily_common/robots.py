@@ -12,6 +12,7 @@ fail safe, never crawl a host whose rules we could not read.
 from __future__ import annotations
 
 import fnmatch
+import time
 from collections.abc import Callable, Iterable
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
@@ -36,11 +37,17 @@ class RobotsCache:
         fetcher: RobotsFetcher,
         user_agent: str,
         extra_disallow_globs: Iterable[str] = ("*/Models/*/Parts/*",),
+        ttl_seconds: float = 3600.0,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._fetcher = fetcher
         self._user_agent = user_agent
         self._extra_globs = tuple(extra_disallow_globs)
-        self._parsers: dict[str, RobotFileParser] = {}
+        self._ttl = ttl_seconds
+        self._clock = clock
+        # origin -> (parser, fetched_at). Re-fetched once a long crawl outlives
+        # the TTL, so we never honor a stale copy of the rules.
+        self._parsers: dict[str, tuple[RobotFileParser, float]] = {}
 
     @staticmethod
     def _origin(url: str) -> str:
@@ -49,12 +56,14 @@ class RobotsCache:
 
     def _parser_for(self, url: str) -> RobotFileParser:
         origin = self._origin(url)
-        parser = self._parsers.get(origin)
-        if parser is None:
-            body = self._fetcher(f"{origin}/robots.txt")
-            parser = RobotFileParser()
-            parser.parse(body.splitlines())
-            self._parsers[origin] = parser
+        now = self._clock()
+        cached = self._parsers.get(origin)
+        if cached is not None and now - cached[1] < self._ttl:
+            return cached[0]
+        body = self._fetcher(f"{origin}/robots.txt")
+        parser = RobotFileParser()
+        parser.parse(body.splitlines())
+        self._parsers[origin] = (parser, now)
         return parser
 
     def allowed(self, url: str) -> bool:

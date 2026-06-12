@@ -68,6 +68,30 @@ def test_missing_robots_allows_all() -> None:
     assert c.allowed("https://www.partselect.com/anything")
 
 
+def test_robots_refetched_after_ttl() -> None:
+    # A long crawl must not honor a stale robots copy: re-fetch past the TTL.
+    calls: list[str] = []
+    clock = {"t": 0.0}
+
+    def fetcher(url: str) -> str:
+        calls.append(url)
+        return ROBOTS
+
+    c = RobotsCache(
+        fetcher=fetcher,
+        user_agent="Bot",
+        ttl_seconds=100.0,
+        clock=lambda: clock["t"],
+    )
+    c.allowed("https://www.partselect.com/PS1.htm")
+    clock["t"] = 50.0
+    c.allowed("https://www.partselect.com/PS2.htm")  # within TTL -> cached
+    assert len(calls) == 1
+    clock["t"] = 150.0
+    c.allowed("https://www.partselect.com/PS3.htm")  # past TTL -> re-fetched
+    assert len(calls) == 2
+
+
 def test_transient_failure_propagates() -> None:
     def boom(url: str) -> str:
         raise ConnectionError("5xx")
