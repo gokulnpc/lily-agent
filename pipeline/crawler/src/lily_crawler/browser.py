@@ -9,6 +9,7 @@ browser.
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -40,10 +41,14 @@ class PoliteBrowser:
 
     @contextmanager
     def session(self) -> Iterator[_Session]:
+        # Headed Chrome passes Akamai locally; in a pod there's no display, so
+        # either run new-headless real Chrome (LILY_HEADLESS=true) or wrap the
+        # process in xvfb-run for headed. Default headed for local dev.
+        headless = os.environ.get("LILY_HEADLESS", "").lower() in ("1", "true", "yes")
         with sync_playwright() as pw:
             browser = pw.chromium.launch(
                 channel="chrome",
-                headless=False,
+                headless=headless,
                 args=["--disable-blink-features=AutomationControlled"],
             )
             context = browser.new_context(user_agent=USER_AGENT, locale="en-US")

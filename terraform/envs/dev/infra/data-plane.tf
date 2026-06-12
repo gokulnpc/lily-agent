@@ -61,8 +61,11 @@ module "irsa_crawler" {
 
 data "aws_iam_policy_document" "etl" {
   statement {
-    sid       = "ReadRawHtml"
-    actions   = ["s3:GetObject", "s3:GetObjectVersion"]
+    # GetObject for the normal parse path; PutObject because the bounded
+    # seed-crawl orchestrator (lily_etl.tools.seed_crawl) fetches AND parses in
+    # one process, so it writes raw HTML too (the crawler role's job).
+    sid       = "ReadWriteRawHtml"
+    actions   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
     resources = ["${module.s3_sqs.raw_bucket_arn}/raw/*"]
   }
 

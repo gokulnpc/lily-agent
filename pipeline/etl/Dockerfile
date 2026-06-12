@@ -11,13 +11,21 @@ COPY libs/common libs/common
 COPY libs/search libs/search
 COPY db db
 COPY pipeline/parsers pipeline/parsers
+COPY pipeline/crawler pipeline/crawler
 COPY pipeline/etl pipeline/etl
 RUN uv sync --frozen --no-dev --no-editable --package lily-etl
 
 FROM python:3.12-slim
-RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
-WORKDIR /app
+# The seed-crawl orchestrator drives Chrome (headless is Akamai-403'd), so the
+# image ships the real Chrome binary — same as the crawler image.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+RUN playwright install --with-deps chrome
+# xvfb provides a virtual display so headed Chrome runs in a pod (fallback if
+# new-headless is bot-detected). Invoke via `xvfb-run -a python -m ...`.
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb && rm -rf /var/lib/apt/lists/*
+RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 USER app
+WORKDIR /app
 CMD ["python", "-m", "lily_etl.runner"]

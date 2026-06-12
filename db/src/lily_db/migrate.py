@@ -16,6 +16,7 @@ from pathlib import Path
 
 import psycopg
 
+
 def _migrations_dir() -> Path:
     # Installed wheel ships migrations alongside the package (force-include);
     # local dev/editable runs from the repo's db/migrations.

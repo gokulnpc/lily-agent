@@ -75,6 +75,20 @@ def test_section_yields_compat_pairs(fixture: Load) -> None:
     assert s.parts[0].part_name  # data-name carried through
 
 
+COVER_SHEET_URL = (
+    "https://www.partselect.com/Models/WRS325FDAM04/Sections/Cover-Sheet/?ModelID=7182679"
+)
+
+
+def test_cover_sheet_section_is_legitimately_empty(fixture: Load) -> None:
+    # A12: schematic Cover-Sheet pages have no parts list — empty, NOT drift.
+    # (test_empty_section_raises_drift below confirms a genuine parts section
+    # with no parts still alerts, so detection isn't loosened.)
+    s = parse_section(fixture("section-cover-sheet"), COVER_SHEET_URL)
+    assert s.model_number == "WRS325FDAM04"
+    assert s.parts == []  # legitimately empty, no SchemaDriftError raised
+
+
 def test_symptom_index(fixture: Load) -> None:
     idx = parse_symptom_index(fixture("repair-index-fridge"), REPAIR_URL)
     assert idx.appliance_type == "refrigerator"

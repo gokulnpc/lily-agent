@@ -600,6 +600,7 @@ source = { editable = "pipeline/etl" }
 dependencies = [
     { name = "boto3" },
     { name = "lily-common" },
+    { name = "lily-crawler" },
     { name = "lily-db" },
     { name = "lily-parsers" },
     { name = "lily-search" },
@@ -610,6 +611,7 @@ dependencies = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.35" },
     { name = "lily-common", editable = "libs/common" },
+    { name = "lily-crawler", editable = "pipeline/crawler" },
     { name = "lily-db", editable = "db" },
     { name = "lily-parsers", editable = "pipeline/parsers" },
     { name = "lily-search", editable = "libs/search" },

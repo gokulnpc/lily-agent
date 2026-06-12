@@ -8,6 +8,7 @@ dependencies = [
   "lily-db",
   "lily-parsers",
   "lily-search",
+  "lily-crawler",
   "psycopg[binary]>=3.2",
   "boto3>=1.35",
 ]

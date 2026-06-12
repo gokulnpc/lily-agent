@@ -10,6 +10,7 @@ the first signal PartSelect changed its markup — PRD §8 risk).
 | `part-dishwasher.html` | part | `/PS11746591-…-Dishwasher-Door-Balance-Link-Kit.htm` |
 | `model-fridge.html` | model | `/Models/WRS325FDAM04/` |
 | `model-dishwasher.html` | model | `/Models/WDT780SAEM1/` |
+| `section-cover-sheet.html` | section (empty) | `/Models/WRS325FDAM04/Sections/Cover-Sheet/` — schematic page, legitimately no parts (A12) |
 | `repair-index-fridge.html` | repair index | `/Repair/Refrigerator/` (symptom list) |
 | `symptom-fridge.html` | symptom | `/Repair/Refrigerator/Door-Sweating/` |
 | `robots.html` | robots.txt | `/robots.txt` (rendered in a `<pre>`) |
