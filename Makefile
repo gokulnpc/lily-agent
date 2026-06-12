@@ -1,4 +1,4 @@
-.PHONY: check fmt evals up down tf-fmt tf-validate deploy-gateway scale-down scale-up
+.PHONY: check fmt evals migrate up down tf-fmt tf-validate deploy-gateway scale-down scale-up
 
 # ---- Quality gates ---------------------------------------------------------
 
@@ -14,6 +14,9 @@ fmt: ## auto-fix lint + formatting
 
 evals: ## golden-dataset evals (stub until Phase 2)
 	@echo "no evals yet (Phase 2)"
+
+migrate: ## apply pending SQL migrations to the local compose Postgres
+	uv run python -m lily_db.migrate
 
 # ---- Local stack ------------------------------------------------------------
 

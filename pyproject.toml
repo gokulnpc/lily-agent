@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
   "lily-common",
   "lily-gateway",
+  "lily-db",
 ]
 
 [tool.uv]
@@ -24,11 +25,13 @@ dev-dependencies = [
 members = [
   "libs/common",
   "services/gateway",
+  "db",
 ]
 
 [tool.uv.sources]
 lily-common = { workspace = true }
 lily-gateway = { workspace = true }
+lily-db = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -38,15 +41,15 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lily_common", "gateway"]
+known-first-party = ["lily_common", "gateway", "lily_db"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-mypy_path = ["libs/common/src", "services/gateway/src"]
+mypy_path = ["libs/common/src", "services/gateway/src", "db/src"]
 explicit_package_bases = true
 namespace_packages = true
 
 [tool.pytest.ini_options]
-testpaths = ["libs", "services", "pipeline", "evals"]
+testpaths = ["libs", "services", "pipeline", "evals", "db"]
 addopts = "-q"
