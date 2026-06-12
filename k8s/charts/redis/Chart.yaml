@@ -1,0 +1,8 @@
+apiVersion: v2
+name: redis
+description: In-cluster Redis for the LangGraph checkpointer (dev). D11 target is
+  ElastiCache; this is the dev cost-guard stand-in (ephemeral — sessions have a
+  24h TTL, a pod restart drops them, acceptable for dev/demo).
+type: application
+version: 0.1.0
+appVersion: "7.4"

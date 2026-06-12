@@ -126,6 +126,7 @@ module "opensearch" {
   vpc_id                     = module.network.vpc_id
   subnet_ids                 = module.network.private_subnet_ids
   allowed_security_group_ids = [module.eks.cluster_security_group_id]
-  # The indexer (etl) signs requests; Phase 2 retrieval role joins this list.
-  access_principal_arns = [module.irsa_etl.role_arn]
+  # The indexer (etl) signs requests; the orchestrator (embedded in the gateway)
+  # queries at serve time (diagnose_symptom / search_parts).
+  access_principal_arns = [module.irsa_etl.role_arn, module.irsa_orchestrator.role_arn]
 }

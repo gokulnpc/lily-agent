@@ -1,0 +1,18 @@
+# redis-stack-server (not plain redis): the langgraph-redis checkpointer uses
+# RediSearch (FT.* commands) to index checkpoints, which only Redis Stack ships.
+image:
+  repository: redis/redis-stack-server
+  tag: "7.4.0-v0"
+  pullPolicy: IfNotPresent
+
+# App workloads run on the spot pool (D17). Redis is ephemeral here, so a reclaim
+# just drops in-flight sessions (24h TTL) — acceptable for dev.
+nodeSelector:
+  role: stateless
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

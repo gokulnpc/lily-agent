@@ -109,6 +109,25 @@ def test_end_to_end_yes_from_parsed_data(conn: psycopg.Connection, fixture: Load
     assert _verdict(conn, "ps 11752778", "wrs-325-fdam04") == "YES"
 
 
+def test_part_symptoms_fixed_persisted(conn: psycopg.Connection, fixture: Load) -> None:
+    # 0004 / A14: the part page's "fixes the following symptoms" list is now
+    # persisted (it was parsed but dropped before) — the source for the
+    # symptoms_fixed -> catalog.symptoms vocab map that backfills symptom_parts.
+    part_spid = _seed_source_page(conn, PART_URL, "part")
+    part = parse_part(fixture("part-fridge"), PART_URL)
+    assert "Leaking" in part.symptoms_fixed  # parser extracted it
+    upsert_part(conn, part, source_url=PART_URL, source_page_id=part_spid)
+    conn.commit()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT symptoms_fixed FROM catalog.parts WHERE ps_number_norm = catalog.norm_id(%s)",
+            ("PS11752778",),
+        )
+        row = cur.fetchone()
+    assert row is not None
+    assert "Leaking" in row[0]  # round-tripped through the new text[] column
+
+
 def test_other_verdicts(conn: psycopg.Connection, fixture: Load) -> None:
     _ingest_all(conn, fixture)
     assert _verdict(conn, "PS11752778", "NONEXISTENTMODEL") == "MODEL_NOT_FOUND"

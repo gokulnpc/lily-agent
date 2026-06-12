@@ -7,6 +7,17 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.32",
   "lily-common",
+  # Orchestrator embedded in the gateway process (D4/D5 amended). Pulls the
+  # graph + its framework-agnostic tools (catalog/orders/retrieval/search).
+  "lily-orchestrator",
+  "lily-db",  # migrate-on-deploy (init step)
+  "boto3>=1.35",
+  "langgraph-checkpoint-redis>=0.0.1",  # Redis checkpointer (D11), session-keyed
+  # Observability (CLAUDE.md per-service requirement): metrics + OTel spans. The
+  # OTLP exporter/collector wiring lands in Phase 4; spans/metrics emit now.
+  "prometheus-client>=0.20",
+  "opentelemetry-sdk>=1.27",
+  "opentelemetry-api>=1.27",
 ]
 
 [build-system]

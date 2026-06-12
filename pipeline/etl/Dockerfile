@@ -22,9 +22,10 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 RUN playwright install --with-deps chrome
-# xvfb provides a virtual display so headed Chrome runs in a pod (fallback if
-# new-headless is bot-detected). Invoke via `xvfb-run -a python -m ...`.
-RUN apt-get update && apt-get install -y --no-install-recommends xvfb && rm -rf /var/lib/apt/lists/*
+# xvfb provides a virtual display so headed Chrome runs in a pod (headless is
+# Akamai-403'd, D12). Invoke via `xvfb-run -a python -m ...`. xauth is required by
+# xvfb-run itself (it errors "xauth command not found" without it).
+RUN apt-get update && apt-get install -y --no-install-recommends xvfb xauth && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 USER app
 WORKDIR /app

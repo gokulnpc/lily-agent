@@ -64,6 +64,11 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Proof tools embed verbatim data/case strings — long literals are intentional.
+"services/orchestrator/src/lily_orchestrator/tools/specialist_demo.py" = ["E501"]
+"services/orchestrator/src/lily_orchestrator/tools/guardrail_demo.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl", "lily_search", "lily_catalog", "lily_retrieval", "lily_orders", "lily_orchestrator"]
 

@@ -41,6 +41,9 @@ class ParsedModel:
 class CompatPair:
     ps_number: str
     part_name: str
+    # The part detail page path (query string stripped), for the part-enrichment
+    # crawl to enqueue. None if the section block had no usable href.
+    part_url: str | None = None
 
 
 @dataclass(frozen=True)

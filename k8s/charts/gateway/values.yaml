@@ -13,12 +13,31 @@ serviceAccount:
   # IRSA role ARN once the gateway needs AWS access (Phase 2). Empty = no annotation.
   roleArn: ""
 
+# Orchestrator runtime config. Account-bearing / endpoint values inject at deploy
+# (never committed); guardrailId is a resource id (not an account id).
+config:
+  awsRegion: us-east-1
+  redisUrl: "redis://redis:6379/0"
+  opensearchEndpoint: "" # injected at deploy
+  guardrailId: ""        # injected at deploy (Bedrock guardrail id)
+  guardrailVersion: "DRAFT"
+
+# ESO composes LILY_DATABASE_URL from the RDS-managed secret + these coordinates
+# (secretArn/host injected at deploy). Empty secretArn ⇒ no ExternalSecret (the
+# Phase-0 health stub needed no DB).
+database:
+  secretArn: ""
+  host: ""
+  port: 5432
+  name: lily
+  clusterSecretStore: aws-secrets-manager
+
 resources:
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 200m
+    memory: 512Mi
   limits:
-    memory: 256Mi
+    memory: 1Gi
 
 # App workloads run on the spot pool (D17).
 nodeSelector:

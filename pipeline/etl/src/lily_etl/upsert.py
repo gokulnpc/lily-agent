@@ -35,11 +35,11 @@ def upsert_part(
             INSERT INTO catalog.parts
                 (ps_number, mfr_part_number, name, brand, appliance_type, part_category,
                  price_usd, stock_status, in_stock, install_difficulty, install_time,
-                 install_video_url, rating_avg, review_count, image_url,
+                 install_video_url, rating_avg, review_count, image_url, symptoms_fixed,
                  source_url, source_page_id, scraped_at, last_seen_at)
             VALUES (%(ps)s, %(mpn)s, %(name)s, %(brand)s, %(appliance)s, %(category)s,
                     %(price)s, %(stock)s, %(in_stock)s, %(difficulty)s, %(time)s,
-                    %(video)s, %(rating)s, %(reviews)s, %(image)s,
+                    %(video)s, %(rating)s, %(reviews)s, %(image)s, %(symptoms)s,
                     %(src)s, %(spid)s, now(), now())
             ON CONFLICT (ps_number_norm) DO UPDATE SET
                 mfr_part_number    = EXCLUDED.mfr_part_number,
@@ -55,6 +55,7 @@ def upsert_part(
                 rating_avg         = EXCLUDED.rating_avg,
                 review_count       = EXCLUDED.review_count,
                 image_url          = EXCLUDED.image_url,
+                symptoms_fixed     = EXCLUDED.symptoms_fixed,
                 source_url         = EXCLUDED.source_url,
                 source_page_id     = EXCLUDED.source_page_id,
                 scraped_at         = now(),
@@ -78,6 +79,7 @@ def upsert_part(
                 "rating": part.rating_avg,
                 "reviews": part.review_count,
                 "image": part.image_url,
+                "symptoms": part.symptoms_fixed,
                 "src": source_url,
                 "spid": source_page_id,
             },
@@ -242,6 +244,54 @@ def upsert_symptom_index(
             )
         count += 1
     return count
+
+
+# FR-17 (amended): per-part fix percentages don't exist at the source, so
+# symptom_parts.fix_percentage stays NULL and likely_parts ranks by an honest
+# fallback — review_count then in-stock (display_rank), set here. The join goes
+# part.symptoms_fixed -> curated catalog.symptom_vocab -> catalog.symptoms,
+# normalizing apostrophes (part pages use the curly U+2019). The part's
+# appliance_type picks the right symptom row for both-appliance names.
+_SYMPTOM_PARTS_SQL = """
+INSERT INTO catalog.symptom_parts
+    (symptom_id, part_id, fix_percentage, display_rank, source_url, scraped_at, last_seen_at)
+SELECT
+    m.symptom_id,
+    m.part_id,
+    NULL,
+    row_number() OVER (
+        PARTITION BY m.symptom_id
+        ORDER BY m.review_count DESC NULLS LAST, m.in_stock DESC NULLS LAST, m.ps_number
+    ),
+    m.source_url,
+    now(),
+    now()
+FROM (
+    SELECT DISTINCT
+        s.symptom_id, p.part_id, p.review_count, p.in_stock,
+        COALESCE(p.source_url, '') AS source_url, p.ps_number
+    FROM catalog.parts p
+    CROSS JOIN LATERAL unnest(p.symptoms_fixed) AS ph(phrase)
+    JOIN catalog.symptom_vocab v
+        ON v.phrase = lower(btrim(translate(ph.phrase, %(curly)s, '''')))
+    JOIN catalog.symptoms s
+        ON s.name = v.symptom_name AND s.appliance_type = p.appliance_type
+) m
+ON CONFLICT (symptom_id, part_id) DO UPDATE SET
+    display_rank = EXCLUDED.display_rank,
+    source_url   = EXCLUDED.source_url,
+    last_seen_at = now()
+"""
+
+
+def upsert_symptom_parts(conn: psycopg.Connection) -> int:
+    """Backfill catalog.symptom_parts from part.symptoms_fixed via the curated
+    vocab map (FR-17). Idempotent; returns the number of (symptom, part) links."""
+    with conn.cursor() as cur:
+        # U+2019 = the curly apostrophe the part pages use (translated to straight
+        # so phrases like "door won't ..." match the straight-apostrophe vocab keys).
+        cur.execute(_SYMPTOM_PARTS_SQL, {"curly": "\u2019"})
+        return cur.rowcount
 
 
 def _one(cur: psycopg.Cursor) -> int:

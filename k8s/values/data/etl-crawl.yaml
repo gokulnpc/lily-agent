@@ -1,0 +1,9 @@
+# Namespace-specific values for the part-enrichment crawl in the `data` namespace
+# (dev). Account-ID-bearing values (image.repository, serviceAccount.roleArn,
+# database.secretArn, database.host, config.rawBucket) are injected by
+# `make crawl-enrich` from terraform outputs and are never committed (CLAUDE.md).
+
+crawl:
+  # Override per phase: `make crawl-enrich PARTS_BUDGET=80` (phase 1, ~80 parts),
+  # then `make crawl-enrich PARTS_BUDGET=800` (phase 2, the remainder).
+  partsBudget: 80

@@ -49,6 +49,17 @@ def test_part_dishwasher(fixture: Load) -> None:
     assert p.price_usd is not None and p.price_usd > 0
 
 
+def test_part_appliance_from_breadcrumb_when_slug_lacks_it(fixture: Load) -> None:
+    # Real GE dishwasher screw (PS1481849) from the live crawl — its URL slug has
+    # NO "Refrigerator"/"Dishwasher", which drifted 214/240 parts. appliance_type
+    # must come from the structured js-breadcrumb-data (position 1 = Dishwasher),
+    # not the URL, and not the page's cross-sell links to refrigerator parts.
+    url = "https://www.partselect.com/PS1481849-GE-WD02X10141-Scr-1032-Tt-Hex.htm"
+    p = parse_part(fixture("part-dishwasher-breadcrumb"), url)
+    assert p.ps_number == "PS1481849"
+    assert p.appliance_type == "dishwasher"
+
+
 def test_model_fridge(fixture: Load) -> None:
     m = parse_model(fixture("model-fridge"), MODEL_URL)
     assert m.model_number == "WRS325FDAM04"
@@ -73,6 +84,11 @@ def test_section_yields_compat_pairs(fixture: Load) -> None:
     assert len(s.parts) == 23
     assert all(p.ps_number.startswith("PS") for p in s.parts)
     assert s.parts[0].part_name  # data-name carried through
+    # part_url captured for the enrichment crawl, query string stripped, and
+    # consistent with the PS number (the three-hop discovery source).
+    assert all(p.part_url and p.part_url.startswith("/PS") for p in s.parts)
+    assert all("?" not in (p.part_url or "") for p in s.parts)
+    assert s.parts[0].ps_number in (s.parts[0].part_url or "")
 
 
 COVER_SHEET_URL = (

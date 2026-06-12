@@ -1,0 +1,61 @@
+# Defaults — account-ID-bearing values (image repo, role ARN, secret ARN, bucket,
+# DB host) are injected at deploy time by `make crawl-enrich` from terraform
+# outputs and are NEVER committed (CLAUDE.md). Committed overrides that are safe
+# to keep live in k8s/values/data/etl-crawl.yaml.
+
+image:
+  repository: "" # set by deploy: <ECR>/etl
+  tag: ""        # set by deploy: git sha
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  # The `etl` SA is a shared DATA-PLANE identity: its IRSA trust is fixed to
+  # system:serviceaccount:data:etl (lily-dev-etl role) for every etl job, so it's
+  # a platform resource, not owned by this job chart. It already exists in the dev
+  # cluster (provisioned ad-hoc in Phase 1; TODO: move to terraform/platform).
+  # Default: reference it. Flip create=true (+ roleArn) only on a fresh cluster.
+  create: false
+  name: etl
+  roleArn: ""     # only used when create=true; injected at deploy (embeds account id)
+
+database:
+  # The ExternalSecret composes LILY_DATABASE_URL from the RDS-managed master
+  # secret (username/password) + these non-secret coordinates (injected at deploy).
+  secretArn: ""   # RDS-managed master secret ARN
+  host: ""        # aurora endpoint
+  port: 5432
+  name: lily
+  clusterSecretStore: aws-secrets-manager
+
+config:
+  rawBucket: ""           # LILY_RAW_BUCKET (injected at deploy)
+  awsRegion: us-east-1
+
+crawl:
+  # "crawl"    = enqueue-parts (S3 sections -> part URLs) then the polite fetch.
+  # "reparse"  = re-parse already-fetched part pages from S3 + upsert (no crawl).
+  # "backfill" = symptom_parts from symptoms_fixed via the curated vocab map.
+  # reparse/backfill need no Chrome; used after a parser/data fix.
+  mode: crawl
+  # LILY_PARTS_BUDGET — caps how many NEW part pages this run enqueues+fetches.
+  # Phase 1 (validation batch) = 80; phase 2 (remainder) = 800 (idempotent: parts
+  # already crawled are skipped, so phases accumulate). Unused when mode=reparse.
+  partsBudget: 80
+
+job:
+  # One retry covers an Aurora 0-ACU cold start (A11); enqueue-parts is now
+  # idempotent (reserves budget for already-pending parts) so a retry won't
+  # over-seed. Fails fast on a real error instead of looping.
+  backoffLimit: 1
+  activeDeadlineSeconds: 9000  # covers phase 2 (~1.5-2h at 1 req/6.7s) with headroom
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi              # headed Chrome (Akamai requires it) is memory-hungry
+
+# Stateless spot pool (D17). A reclaim mid-crawl is retried via backoffLimit; the
+# crawl is idempotent (already-crawled parts skipped) so a restart is safe.
+nodeSelector:
+  role: stateless

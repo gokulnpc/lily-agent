@@ -102,3 +102,18 @@ output "ci_plan_role_arn" {
   description = "GitHub Actions plan role — set as the AWS_PLAN_ROLE_ARN repo secret"
   value       = module.github_oidc.plan_role_arn
 }
+
+output "guardrail_id" {
+  description = "Bedrock Guardrail id — set as LILY_GUARDRAIL_ID for the orchestrator (D6)"
+  value       = module.guardrail.guardrail_id
+}
+
+output "guardrail_version" {
+  description = "Published guardrail version — set as LILY_GUARDRAIL_VERSION"
+  value       = module.guardrail.guardrail_version
+}
+
+output "guardrail_arn" {
+  description = "Guardrail ARN — for the orchestrator role's bedrock:ApplyGuardrail grant"
+  value       = module.guardrail.guardrail_arn
+}

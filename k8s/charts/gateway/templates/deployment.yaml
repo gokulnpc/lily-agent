@@ -24,6 +24,29 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      # Migrate-on-deploy (standing convention): schema current before serving.
+      initContainers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "lily_db.migrate"]
+          env:
+            - name: LILY_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gateway.name" . }}-db
+                  key: LILY_DATABASE_URL
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
       containers:
         - name: gateway
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -33,6 +56,24 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          env:
+            - name: HOME
+              value: /tmp
+            - name: AWS_REGION
+              value: {{ .Values.config.awsRegion | quote }}
+            - name: LILY_REDIS_URL
+              value: {{ .Values.config.redisUrl | quote }}
+            - name: LILY_OPENSEARCH_ENDPOINT
+              value: {{ .Values.config.opensearchEndpoint | quote }}
+            - name: LILY_GUARDRAIL_ID
+              value: {{ .Values.config.guardrailId | quote }}
+            - name: LILY_GUARDRAIL_VERSION
+              value: {{ .Values.config.guardrailVersion | quote }}
+            - name: LILY_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "gateway.name" . }}-db
+                  key: LILY_DATABASE_URL
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
@@ -48,5 +89,8 @@ spec:
               port: http
             initialDelaySeconds: 3
             periodSeconds: 5
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

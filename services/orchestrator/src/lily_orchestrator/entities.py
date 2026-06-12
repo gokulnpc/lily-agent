@@ -30,3 +30,20 @@ def extract_model_numbers(text: str) -> list[str]:
         if tok not in ps and not tok.startswith("PS"):
             seen.setdefault(tok, None)
     return list(seen)
+
+
+_EMAIL_RX = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
+# An order number: digits, optionally after "order"/"#". Kept conservative.
+_ORDER_RX = re.compile(r"\border\s*#?\s*(\d{4,})\b|#\s*(\d{4,})\b", re.IGNORECASE)
+
+
+def extract_email(text: str) -> str | None:
+    m = _EMAIL_RX.search(text)
+    return m.group(0) if m else None
+
+
+def extract_order_number(text: str) -> str | None:
+    m = _ORDER_RX.search(text)
+    if m:
+        return m.group(1) or m.group(2)
+    return None

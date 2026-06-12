@@ -1,0 +1,8 @@
+apiVersion: v2
+name: etl-crawl
+description: Bounded in-cluster part-detail enrichment crawl (Step 3b) — runs the
+  etl seed_crawl enqueue-parts + fetch against Aurora/S3 via IRSA. Reusable for
+  the nightly incremental crawl later.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -8,6 +8,14 @@ ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY libs/common libs/common
+COPY libs/search libs/search
+COPY db db
+# The orchestrator is embedded in the gateway (D4/D5 amended) — its tool libs
+# build into the same venv.
+COPY services/catalog services/catalog
+COPY services/orders services/orders
+COPY services/retrieval services/retrieval
+COPY services/orchestrator services/orchestrator
 COPY services/gateway services/gateway
 # --no-editable: build workspace packages into the venv so it survives the copy
 # to the runtime stage without the source tree.

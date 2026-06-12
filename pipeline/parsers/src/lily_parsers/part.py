@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 
 from lily_parsers import _html
@@ -12,6 +13,7 @@ from lily_parsers.dto import ParsedPart
 _PT = "part"
 _YT = "https://www.youtube.com/watch?v={}"
 _SYMPTOM_HEADER = "fixes the following symptoms"
+_APPLIANCES = {"refrigerator", "dishwasher"}
 
 
 def parse_part(html: str, url: str) -> ParsedPart:
@@ -26,8 +28,15 @@ def parse_part(html: str, url: str) -> ParsedPart:
         field="name",
         url=url,
     )
+    # appliance_type is NOT reliably in the URL slug — only ~11% of part names
+    # contain "Refrigerator"/"Dishwasher" (the live crawl drifted on 214/240).
+    # The authoritative source is the structured breadcrumb (position 1); the URL
+    # slug is a fallback.
     appliance_type = require(
-        _html.appliance_from_url(url), page_type=_PT, field="appliance_type", url=url
+        _appliance_from_breadcrumb(tree) or _html.appliance_from_url(url),
+        page_type=_PT,
+        field="appliance_type",
+        url=url,
     )
 
     price_node = tree.css_first('[itemprop="price"]')
@@ -63,6 +72,25 @@ def parse_part(html: str, url: str) -> ParsedPart:
         symptoms_fixed=_parse_symptoms(tree),
         compatible_model_urls=_model_hints(tree),
     )
+
+
+def _appliance_from_breadcrumb(tree: _html.Tree) -> str | None:
+    # The `js-breadcrumb-data` hidden div carries the canonical breadcrumb as
+    # JSON: position 1 is the appliance (e.g. {"position":1,"name":"Dishwasher",
+    # ...}). This is unambiguous even when the page links to the other appliance's
+    # parts for cross-sell. Verified across GE/Frigidaire/Whirlpool part pages.
+    raw = _html.text(tree.css_first(".js-breadcrumb-data"))
+    if not raw:
+        return None
+    try:
+        crumbs = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    for crumb in crumbs:
+        if crumb.get("position") == 1:
+            name = (crumb.get("name") or "").strip().lower()
+            return name if name in _APPLIANCES else None
+    return None
 
 
 def _parse_repair_rating(tree: _html.Tree) -> tuple[str | None, str | None]:

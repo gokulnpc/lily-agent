@@ -43,7 +43,15 @@ def parse_section(html: str, url: str) -> ParsedSection:
         if ps in seen:
             continue
         seen.add(ps)
-        pairs.append(CompatPair(ps_number=ps, part_name=_html.attr(block, "data-name") or ""))
+        # Keep the part page path (query string carries per-model SearchTerm/
+        # ModelNum noise — strip it so the same part dedupes across sections).
+        pairs.append(
+            CompatPair(
+                ps_number=ps,
+                part_name=_html.attr(block, "data-name") or "",
+                part_url=href.split("?")[0],
+            )
+        )
 
     # A zero-part section is drift (the block selector broke) UNLESS it's a
     # known schematic/overview section (e.g. Cover-Sheet) that legitimately

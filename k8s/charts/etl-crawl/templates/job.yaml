@@ -1,0 +1,96 @@
+# Jobs are immutable, so the name carries the release revision — each
+# `helm upgrade` creates a fresh Job (e.g. phase 1 then phase 2 with a different
+# LILY_PARTS_BUDGET) and helm prunes the prior, already-completed one. Deployed
+# WITHOUT --wait so `make crawl-enrich` returns immediately (the fetch runs ~9 min
+# for phase 1, ~1.5-2h for phase 2); watch via `kubectl -n data logs -f`. Let
+# phase 1 finish before starting phase 2.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "etl-crawl.name" . }}-{{ .Release.Revision }}
+  labels:
+    {{- include "etl-crawl.labels" . | nindent 4 }}
+    lily.dev/parts-budget: {{ .Values.crawl.partsBudget | quote }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "etl-crawl.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+      containers:
+        - name: crawl
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Migrations first (idempotent, forward-only — the standing convention),
+          # then either the full crawl or an S3 re-parse, per crawl.mode.
+          command: ["sh", "-c"]
+          args:
+            {{- if eq .Values.crawl.mode "reparse" }}
+            # reparse: re-enrich already-fetched part pages from S3 — no Chrome.
+            - >-
+              python -m lily_db.migrate &&
+              python -m lily_etl.tools.seed_crawl reparse-parts
+            {{- else if eq .Values.crawl.mode "backfill" }}
+            # backfill: symptom_parts from symptoms_fixed via the vocab map — no Chrome.
+            - >-
+              python -m lily_db.migrate &&
+              python -m lily_etl.tools.seed_crawl backfill-symptoms
+            {{- else }}
+            # crawl: enqueue-parts (DB + S3) then the polite fetch (headed Chrome
+            # under xvfb — headless is Akamai-403'd, D12).
+            - >-
+              python -m lily_db.migrate &&
+              python -m lily_etl.tools.seed_crawl enqueue-parts &&
+              xvfb-run -a python -m lily_etl.tools.seed_crawl fetch
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: LILY_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "etl-crawl.name" . }}-db
+                  key: LILY_DATABASE_URL
+            - name: LILY_RAW_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "etl-crawl.name" . }}-config
+                  key: LILY_RAW_BUCKET
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "etl-crawl.name" . }}-config
+                  key: AWS_REGION
+            - name: LILY_PARTS_BUDGET
+              value: {{ .Values.crawl.partsBudget | quote }}
+            - name: HOME
+              value: /tmp
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            {{- toYaml .Values.job.resources | nindent 12 }}
