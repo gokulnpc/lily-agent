@@ -21,6 +21,9 @@ config:
   opensearchEndpoint: "" # injected at deploy
   guardrailId: ""        # injected at deploy (Bedrock guardrail id)
   guardrailVersion: "DRAFT"
+  # OTLP trace export (Phase 4). Empty ⇒ no exporter (setup_tracing is env-gated);
+  # set to the in-cluster Jaeger OTLP HTTP receiver to light up end-to-end traces.
+  otelEndpoint: ""
 
 # ESO composes LILY_DATABASE_URL from the RDS-managed secret + these coordinates
 # (secretArn/host injected at deploy). Empty secretArn ⇒ no ExternalSecret (the

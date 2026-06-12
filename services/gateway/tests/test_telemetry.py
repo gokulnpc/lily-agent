@@ -50,7 +50,7 @@ def test_metrics_endpoint_exposes_series() -> None:
         assert series in body
 
 
-def test_turn_emits_span_with_node_events(conn: psycopg.Connection, fake_converse: type) -> None:
+def test_turn_emits_trace_waterfall(conn: psycopg.Connection, fake_converse: type) -> None:
     telemetry.setup_tracing()
     provider = trace.get_tracer_provider()
     if not isinstance(provider, TracerProvider):  # a prior test may have left a no-op
@@ -66,10 +66,25 @@ def test_turn_emits_span_with_node_events(conn: psycopg.Connection, fake_convers
     client = TestClient(create_app(graph=graph))
     client.post("/chat", json={"session_id": "tel", "message": msg})
 
-    spans = [s for s in exporter.get_finished_spans() if s.name == "chat.turn"]
-    assert spans, "expected a chat.turn span"
-    attrs = dict(spans[-1].attributes or {})
+    spans = exporter.get_finished_spans()
+    names = {s.name for s in spans}
+    turn = [s for s in spans if s.name == "chat.turn"][-1]
+    assert turn.context is not None
+    attrs = dict(turn.attributes or {})
     assert attrs["lily.intent"] == "compatibility"
     assert attrs["lily.session_id"] == "tel"
-    event_names = {e.name for e in spans[-1].events}
-    assert {"router", "specialist", "validator"} <= event_names
+
+    # Per-node child spans (the waterfall), each parented to chat.turn.
+    assert {"graph.router", "graph.specialist", "graph.validator"} <= names
+    router = [s for s in spans if s.name == "graph.router"][-1]
+    assert router.parent is not None
+    assert router.parent.span_id == turn.context.span_id
+
+    # Bedrock spans carry the model id (token usage = 0 from FakeConverse's no-usage
+    # response) and nest under the turn too.
+    bedrock = [s for s in spans if s.name == "bedrock.converse"]
+    assert bedrock, "expected bedrock.converse spans"
+    assert all("gen_ai.request.model" in dict(s.attributes or {}) for s in bedrock)
+    last_bedrock = bedrock[-1]
+    assert last_bedrock.parent is not None
+    assert last_bedrock.parent.span_id == turn.context.span_id

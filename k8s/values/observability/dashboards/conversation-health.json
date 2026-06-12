@@ -1,0 +1,54 @@
+{
+  "uid": "lily-conversation-health",
+  "title": "Lily — Conversation Health",
+  "tags": ["lily"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Turns by intent (rate)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (intent) (rate(lily_chat_turns_total[5m]))", "legendFormat": "{{intent}}" }
+      ]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Block rate",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(lily_guardrail_blocks_total[15m])) / clamp_min(sum(rate(lily_chat_turns_total[15m])), 1)" }
+      ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Invalid-identifier turns (FR-4)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(lily_invalid_identifiers_total[24h]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Feedback by rating (rate)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (rating) (rate(lily_feedback_total[15m]))", "legendFormat": "{{rating}}" }
+      ]
+    },
+    {
+      "id": 5, "type": "stat", "title": "CSAT proxy (👍 / 👍+👎)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        { "refId": "A", "expr": "sum(lily_feedback_total{rating=\"up\"}) / clamp_min(sum(lily_feedback_total), 1)" }
+      ]
+    }
+  ]
+}

@@ -32,6 +32,7 @@ import time
 from collections.abc import AsyncIterator
 from typing import Any
 
+from opentelemetry import trace
 from pydantic import BaseModel
 
 from gateway import telemetry
@@ -82,18 +83,29 @@ async def stream_chat(
     span.set_attribute("lily.trace_id", trace_id)
     span.set_attribute("lily.session_id", session_id)
     try:
-        last = turn_start
-        async for chunk in graph.astream({"utterance": message}, config, stream_mode="updates"):
-            for node, delta in chunk.items():
-                now = time.perf_counter()
-                telemetry.NODE_LATENCY.labels(node=node).observe(now - last)
-                span.add_event(node, {"elapsed_ms": round((now - last) * 1000, 1)})
-                last = now
-                if delta:
-                    state.update(delta)
-                label = _status_label(node, state)
-                if label:
-                    yield _sse("status", {"node": node, "label": label})
+        # chat.turn is current during the run so each bedrock.converse span (opened
+        # inside the graph nodes) nests under it (NFR-17 end-to-end trace).
+        with trace.use_span(span, end_on_exit=False):
+            last = turn_start
+            last_ns = time.time_ns()
+            async for chunk in graph.astream({"utterance": message}, config, stream_mode="updates"):
+                for node, delta in chunk.items():
+                    now = time.perf_counter()
+                    now_ns = time.time_ns()
+                    telemetry.NODE_LATENCY.labels(node=node).observe(now - last)
+                    # Child span over the node's completion interval. astream yields
+                    # post-completion, so this is the inter-update delta (honest: we
+                    # never see the node's true start), enough for the waterfall.
+                    node_span = telemetry.tracer().start_span(f"graph.{node}", start_time=last_ns)
+                    node_span.set_attribute("lily.node", node)
+                    node_span.end(end_time=now_ns)
+                    last = now
+                    last_ns = now_ns
+                    if delta:
+                        state.update(delta)
+                    label = _status_label(node, state)
+                    if label:
+                        yield _sse("status", {"node": node, "label": label})
 
         intent = state.get("primary_intent") or "none"
         blocked = bool(state.get("blocked"))

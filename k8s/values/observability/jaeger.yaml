@@ -1,0 +1,37 @@
+# Jaeger all-in-one, in-memory (dev). Receives OTLP from the gateway directly
+# (no OTel Collector — D-amendment). NO ingress: Jaeger has no auth, so it is
+# never put on the public ALB; access for the demo is `kubectl port-forward`.
+fullnameOverride: jaeger
+
+provisionDataStore:
+  cassandra: false
+  elasticsearch: false
+
+storage:
+  type: memory
+
+# all-in-one bundles agent+collector+query; the split services stay disabled.
+agent:
+  enabled: false
+collector:
+  enabled: false
+query:
+  enabled: false
+
+allInOne:
+  enabled: true
+  # On-demand with the rest of the observability data plane (see kps values) — not
+  # on the single spot node that also runs the apps it traces.
+  nodeSelector:
+    role: system
+  resources:
+    requests:
+      cpu: 100m
+      memory: 384Mi
+  extraEnv:
+    - name: SPAN_STORAGE_TYPE
+      value: memory
+    - name: COLLECTOR_OTLP_ENABLED
+      value: "true"
+    - name: MEMORY_MAX_TRACES
+      value: "20000"

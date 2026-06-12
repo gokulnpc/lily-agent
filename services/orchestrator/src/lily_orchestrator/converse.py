@@ -7,7 +7,15 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from opentelemetry import trace
+
+from lily_common.metrics import record_usage
 from lily_common.retry import call_with_retry, is_bedrock_transient
+
+# Uses whatever TracerProvider the host process installed (the gateway's
+# setup_tracing). With no provider it's a no-op tracer — so orchestrator unit
+# tests need no OTel setup.
+_tracer = trace.get_tracer("lily.orchestrator")
 
 # Model tiering (D2, amended 2026-06-12): the 3.5 generation is legacy-gated on
 # Bedrock ("upgrade to an active model"), so we use current-gen profiles —
@@ -42,6 +50,17 @@ def converse(
         )
         return result
 
-    response = call_with_retry(_invoke, retryable=is_bedrock_transient)
-    parts = response["output"]["message"]["content"]
-    return "".join(block.get("text", "") for block in parts)
+    # One span per Bedrock call (NFR-17) — nests under whatever node span is
+    # current — plus token/cost metering (NFR-7/18) from the Converse `usage`.
+    with _tracer.start_as_current_span("bedrock.converse") as span:
+        span.set_attribute("gen_ai.system", "aws.bedrock")
+        span.set_attribute("gen_ai.request.model", model_id)
+        response = call_with_retry(_invoke, retryable=is_bedrock_transient)
+        usage = response.get("usage") or {}
+        in_tok = int(usage.get("inputTokens", 0) or 0)
+        out_tok = int(usage.get("outputTokens", 0) or 0)
+        span.set_attribute("gen_ai.usage.input_tokens", in_tok)
+        span.set_attribute("gen_ai.usage.output_tokens", out_tok)
+        record_usage(model_id, in_tok, out_tok)
+        parts = response["output"]["message"]["content"]
+        return "".join(block.get("text", "") for block in parts)

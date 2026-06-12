@@ -1,0 +1,47 @@
+{
+  "uid": "lily-cost",
+  "title": "Lily — Cost per Conversation",
+  "tags": ["lily"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Cost / conversation (last 1h)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(lily_bedrock_cost_usd_total[1h])) / clamp_min(sum(increase(lily_chat_turns_total[1h])), 1)" }
+      ]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Total Bedrock cost (USD)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
+      "targets": [
+        { "refId": "A", "expr": "sum(lily_bedrock_cost_usd_total)" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Spend rate by model (USD/s)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "targets": [
+        { "refId": "A", "expr": "sum by (model) (rate(lily_bedrock_cost_usd_total[5m]))", "legendFormat": "{{model}}" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Tokens by model + direction (rate)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (model, direction) (rate(lily_bedrock_tokens_total[5m]))", "legendFormat": "{{model}} {{direction}}" }
+      ]
+    }
+  ]
+}

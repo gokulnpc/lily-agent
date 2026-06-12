@@ -31,3 +31,22 @@ variable "external_secrets_chart_version" {
   type        = string
   default     = "2.6.0"
 }
+
+# ---- Observability (Phase 4) ----
+variable "kube_prometheus_stack_chart_version" {
+  description = "prometheus-community/kube-prometheus-stack chart version"
+  type        = string
+  default     = "75.18.0"
+}
+
+variable "jaeger_chart_version" {
+  description = "jaegertracing/jaeger chart version (all-in-one, in-memory)"
+  type        = string
+  default     = "3.4.1"
+}
+
+variable "fluent_bit_chart_version" {
+  description = "fluent/fluent-bit chart version"
+  type        = string
+  default     = "0.47.10"
+}

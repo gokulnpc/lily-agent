@@ -6,11 +6,13 @@ a TracerProvider with no exporter by default (spans are created, ready to export
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 # Mandatory series (NFR-18): turns, full-turn + per-node latency, guardrail
@@ -27,12 +29,20 @@ _configured = False
 
 
 def setup_tracing(service: str = "gateway") -> None:
-    """Idempotently install a TracerProvider. No exporter by default (Phase 4
-    wires OTLP→collector); tests install their own in-memory exporter."""
+    """Idempotently install a TracerProvider. The OTLP exporter is wired only when
+    OTEL_EXPORTER_OTLP_ENDPOINT is set (so offline/dev and tests stay exporter-free
+    and install their own in-memory exporter). In-cluster the env points at Jaeger's
+    OTLP HTTP receiver."""
     global _configured
     if _configured:
         return
-    trace.set_tracer_provider(TracerProvider(resource=Resource.create({"service.name": service})))
+    provider = TracerProvider(resource=Resource.create({"service.name": service}))
+    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
+        # Imported lazily so the exporter package is only needed where it's used.
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(provider)
     _configured = True
 
 

@@ -41,12 +41,13 @@ data "aws_iam_policy_document" "orchestrator" {
     actions = ["es:ESHttpGet", "es:ESHttpPost", "es:ESHttpHead"]
     # Constructed ARN (not module.opensearch.arn) to avoid a dependency cycle —
     # the domain's access policy references this role (see data-plane.tf).
-    # domain/lily-dev/* is a deliberate DEV-SCOPE relaxation: it covers every
-    # index. When Phase 4 puts log indices on the SAME domain (D10), scope this to
-    # the retrieval index namespace (domain/lily-dev/parts*, /symptoms*, …) so the
-    # serve-time role can't read the log indices.
+    # Scoped to the RETRIEVAL index namespace (retrieval-parts / retrieval-symptoms
+    # / retrieval-guides — lily_search.index.RETRIEVAL_PREFIX). Phase 4 put the log
+    # indices (lily-logs-*) on the SAME domain (D10); pinning the serve-time role to
+    # retrieval-* means it can NOT read the logs (reads are path-scoped, so IAM
+    # enforces this). Bulk/_search to retrieval-* is covered by the prefix.
     resources = [
-      "arn:aws:es:${var.region}:${data.aws_caller_identity.current.account_id}:domain/lily-dev/*",
+      "arn:aws:es:${var.region}:${data.aws_caller_identity.current.account_id}:domain/lily-dev/retrieval-*",
     ]
   }
 }

@@ -8,3 +8,8 @@ ingress:
   # the ARN embeds the account ID, which is never committed (CLAUDE.md).
   certificateArn: ""
   groupName: lily-dev
+
+config:
+  # Phase 4: export OTLP traces to the in-cluster Jaeger (deploy observability
+  # first). Cluster-internal DNS — no account id, safe to commit.
+  otelEndpoint: "http://jaeger-collector.observability:4318"

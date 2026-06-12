@@ -69,6 +69,13 @@ spec:
               value: {{ .Values.config.guardrailId | quote }}
             - name: LILY_GUARDRAIL_VERSION
               value: {{ .Values.config.guardrailVersion | quote }}
+            {{- if .Values.config.otelEndpoint }}
+            # OTLP→Jaeger (Phase 4). Empty ⇒ setup_tracing installs no exporter.
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.config.otelEndpoint | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: gateway
+            {{- end }}
             - name: LILY_DATABASE_URL
               valueFrom:
                 secretKeyRef:

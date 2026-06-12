@@ -127,6 +127,11 @@ module "opensearch" {
   subnet_ids                 = module.network.private_subnet_ids
   allowed_security_group_ids = [module.eks.cluster_security_group_id]
   # The indexer (etl) signs requests; the orchestrator (embedded in the gateway)
-  # queries at serve time (diagnose_symptom / search_parts).
-  access_principal_arns = [module.irsa_etl.role_arn, module.irsa_orchestrator.role_arn]
+  # queries at serve time (diagnose_symptom / search_parts); Fluent Bit writes
+  # the log indices (Phase 4 — scoped to lily-logs-* by its own IAM policy).
+  access_principal_arns = [
+    module.irsa_etl.role_arn,
+    module.irsa_orchestrator.role_arn,
+    module.irsa_fluentbit.role_arn,
+  ]
 }

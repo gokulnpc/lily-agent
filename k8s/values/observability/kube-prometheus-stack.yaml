@@ -1,0 +1,144 @@
+# DEV-tuned kube-prometheus-stack (Phase 4). Topology: ON-DEMAND `system` pool
+# runs the control plane (the operator + its admission-webhook patch Job — a spot
+# reclaim of an admission webhook = cluster-wide admission failures, the
+# convention's first observability test) AND the observability data plane
+# (Prometheus / Grafana / Alertmanager). Monitoring stays on on-demand on purpose:
+# it must not share the single reclaimable `stateless` (spot) node with the very
+# app pods it monitors — a spot loss would take down both. The spot node stays for
+# app workloads (gateway / frontend / redis). The 2 system nodes have ~5.5Gi
+# aggregate free, ample for the ~1.4Gi data plane. certificate-arn for the Grafana
+# ingress is injected at apply (account-bearing).
+
+fullnameOverride: lily-kps
+
+# Only our watchdog rule (defaultRules are a large memory/CPU cost on dev).
+defaultRules:
+  create: false
+
+# ---- operator + admission webhook -> SYSTEM pool ----
+prometheusOperator:
+  nodeSelector:
+    role: system
+  admissionWebhooks:
+    patch:
+      nodeSelector:
+        role: system
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+kube-state-metrics:
+  nodeSelector:
+    role: system
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+
+# ---- node-exporter: DaemonSet on every node (incl. spot) ----
+prometheus-node-exporter:
+  tolerations:
+    - operator: Exists
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+
+# ---- Prometheus -> SYSTEM (on-demand, stable), short retention ----
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      role: system
+    retention: 6h
+    retentionSize: 1GB
+    replicas: 1
+    walCompression: true
+    resources:
+      requests:
+        cpu: 200m
+        memory: 600Mi
+    # Discover ServiceMonitors/PodMonitors/Rules in every namespace (the gateway
+    # /metrics ServiceMonitor lives in `agent`, our PrometheusRule in observability).
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+# ---- Alertmanager -> SYSTEM; Slack receiver from the ESO-synced secret ----
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      role: system
+    replicas: 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+    # Mounted at /etc/alertmanager/secrets/lily-slack-webhook/ (ESO-synced).
+    secrets:
+      - lily-slack-webhook
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: slack
+      group_by: ["alertname"]
+      group_wait: 10s
+      repeat_interval: 1h
+      routes:
+        - receiver: slack
+          matchers: ['severity=~"info|warning|critical"']
+    receivers:
+      - name: slack
+        slack_configs:
+          - channel: "#lily-alerts"
+            api_url_file: /etc/alertmanager/secrets/lily-slack-webhook/url
+            send_resolved: true
+            title: "{{ .CommonLabels.alertname }}"
+            text: "{{ .CommonAnnotations.summary }}"
+
+# ---- Grafana -> SYSTEM; login-only (NO anonymous), ESO/terraform admin pw ----
+grafana:
+  nodeSelector:
+    role: system
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  admin:
+    existingSecret: lily-grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    auth.anonymous:
+      enabled: false
+    users:
+      viewers_can_edit: false
+  # Auto-load dashboards from labelled ConfigMaps in this namespace.
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: observability
+  # Prometheus datasource is auto-provisioned; add Jaeger for trace linking.
+  additionalDataSources:
+    - name: Jaeger
+      type: jaeger
+      access: proxy
+      url: http://jaeger-query.observability:16686
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    hosts:
+      - grafana.dev.lily-agent.com
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/group.name: lily-dev
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+      alb.ingress.kubernetes.io/healthcheck-path: /api/health
+      # OPTIONAL hard gate in addition to Grafana login — restrict to an egress
+      # CIDR. Left wide for the demo; tighten before any non-dev exposure.
+      # alb.ingress.kubernetes.io/inbound-cidrs: "0.0.0.0/0"

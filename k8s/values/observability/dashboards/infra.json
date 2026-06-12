@@ -1,0 +1,46 @@
+{
+  "uid": "lily-infra",
+  "title": "Lily — Infra / K8s",
+  "tags": ["lily"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Node CPU utilisation",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } },
+      "targets": [
+        { "refId": "A", "expr": "1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Node memory used",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } },
+      "targets": [
+        { "refId": "A", "expr": "1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Pod restarts (by namespace)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (namespace) (increase(kube_pod_container_status_restarts_total[1h]))", "legendFormat": "{{namespace}}" }
+      ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Running pods (lily namespaces)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "count(kube_pod_info{namespace=~\"agent|frontend|data|observability|platform\"})" }
+      ]
+    }
+  ]
+}
