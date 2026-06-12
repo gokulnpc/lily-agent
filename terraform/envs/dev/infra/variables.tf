@@ -34,3 +34,15 @@ variable "state_bucket_name" {
   description = "Terraform state bucket name (from the bootstrap stack output)"
   type        = string
 }
+
+variable "aurora_min_acu" {
+  description = "Aurora Serverless v2 floor: 0.5 per locked D9, or 0 for auto-pause"
+  type        = number
+  default     = 0.5
+}
+
+variable "aurora_max_acu" {
+  description = "Aurora Serverless v2 ceiling"
+  type        = number
+  default     = 2
+}

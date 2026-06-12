@@ -97,6 +97,9 @@ data "aws_iam_policy_document" "external_secrets" {
     ]
     resources = [
       "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:lily/*",
+      # RDS-managed Aurora master secret (name is rds!cluster-…, outside the
+      # lily/ prefix) — ESO syncs it into the data namespace for db clients.
+      module.aurora.master_user_secret_arn,
     ]
   }
 }

@@ -53,7 +53,8 @@ it in the module would cycle module references.
 
 | Module | Phase | Contract sketch |
 |---|---|---|
-| `aurora` | 1 | Aurora PostgreSQL Serverless v2, 0.5 ACU floor (D9); consumes `vpc_id` + `private_subnet_ids`, creates own SG |
-| `opensearch` | 1 | Single domain, retrieval + log index namespaces (D10); private subnets |
-| `s3-sqs` | 1 | Raw-crawl bucket (versioned), crawl/index queues (D12) |
+| `opensearch` | 1 (indexing step) | Single domain, retrieval + log index namespaces (D10); private subnets |
 | `redis` | 2 | ElastiCache: sessions, semantic cache, rate limits (D11) |
+
+Built in Phase 1: `aurora` (Serverless v2, RDS-managed master secret, EKS-SG-only
+ingress) and `s3-sqs` (versioned raw-HTML bucket, crawl/index queues + DLQs).

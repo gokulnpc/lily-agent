@@ -53,6 +53,46 @@ output "irsa_external_secrets_role_arn" {
   value       = module.irsa_external_secrets.role_arn
 }
 
+output "aurora_endpoint" {
+  description = "Aurora writer endpoint"
+  value       = module.aurora.endpoint
+}
+
+output "aurora_database_name" {
+  description = "Initial database name"
+  value       = module.aurora.database_name
+}
+
+output "aurora_master_secret_arn" {
+  description = "RDS-managed credentials secret (synced into the cluster by ESO)"
+  value       = module.aurora.master_user_secret_arn
+}
+
+output "raw_bucket_name" {
+  description = "Versioned raw-HTML crawl bucket"
+  value       = module.s3_sqs.raw_bucket_name
+}
+
+output "crawl_jobs_queue_url" {
+  description = "Crawl jobs queue URL"
+  value       = module.s3_sqs.crawl_jobs_queue_url
+}
+
+output "index_jobs_queue_url" {
+  description = "Index jobs queue URL"
+  value       = module.s3_sqs.index_jobs_queue_url
+}
+
+output "irsa_crawler_role_arn" {
+  description = "IRSA role for crawler workers (data namespace)"
+  value       = module.irsa_crawler.role_arn
+}
+
+output "irsa_etl_role_arn" {
+  description = "IRSA role for ETL workers (data namespace)"
+  value       = module.irsa_etl.role_arn
+}
+
 output "ci_plan_role_arn" {
   description = "GitHub Actions plan role — set as the AWS_PLAN_ROLE_ARN repo secret"
   value       = module.github_oidc.plan_role_arn

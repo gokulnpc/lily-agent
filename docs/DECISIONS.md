@@ -39,6 +39,7 @@ Status legend: **LOCKED** = do not change without owner sign-off · **OPEN** = n
 | O4 | **GitHub Actions deploys only** in MVP — no Argo CD. `k8s/` stays pure app charts (Argo-compatible); Argo Rollouts considered for Phase 5 canaries. | 2026-06-11 |
 | — | Dev region: **us-east-1** (Bedrock availability; ACM certs reusable for CloudFront). | 2026-06-11 |
 | — | Phase 0 edge: ACM cert on ALB; **CloudFront + WAF deferred to Phase 3** (D8 target topology unchanged). See docs/adr/0001. | 2026-06-11 |
+| D9 (amended) | Aurora Serverless v2 floor changed **0.5 ACU → 0 ACU with auto-pause** (10 min idle, ~15s cold resume). The 0-ACU feature postdates the original decision; D9's rationale was cost, and this is ~$40/mo cheaper for a dev cluster. Floor is the `aurora_min_acu` tfvar — raise it if cold starts ever matter. | 2026-06-12 |
 
 ## Phase 0 hardening notes (2026-06-11)
 
@@ -56,6 +57,26 @@ Related convention (also in CLAUDE.md): admission webhooks and control-plane-cri
 pods are pinned to the on-demand `system` node pool — a spot reclaim of a webhook pod
 turns into cluster-wide admission failures. The chart-level `nodeSelector` does NOT
 cover webhook/cainjector/cert-controller subcomponents; each needs its own pin.
+
+## Phase 1 schema assumptions — VERIFY DURING CRAWLER STEP (2026-06-12)
+
+The 0001 schema was designed without real PartSelect HTML in hand (the site 403s
+plain fetchers). Each assumption below is hedged in the DDL (`db/migrations/0001_init.sql`)
+but gets tested for real by the crawler/parser. **Update the Status column as real
+pages confirm or refute each one; a refuted assumption gets an additive migration,
+recorded here.**
+
+| # | Assumption | Hedge in schema | Status |
+|---|---|---|---|
+| A1 | MPN uniqueness scope (global? per-brand?) | non-unique index on `mfr_part_number_norm`; MPN lookups may return multiple candidates, agent disambiguates | untested |
+| A2 | `model_number` globally unique | `UNIQUE(model_number_norm)`; ETL logs conflicting-brand upserts as schema drift; fallback = unique(brand, model_number_norm) + disambiguation turn | untested |
+| A3 | difficulty/time vocab ("Really Easy", "15-30 mins") | verbatim text, no CHECK, never branch on these | untested |
+| A4 | one install video per part | single `install_video_url`; multiples ⇒ additive `part_videos` table | untested |
+| A5 | fix % present per symptom-part pair | nullable + `display_rank` fallback ordering | untested |
+| A6 | stock label vocabulary | raw `stock_status` text + parser-derived `in_stock` boolean; unknown ⇒ NULL ⇒ "check product page" | untested |
+| A7 | qna/review shapes (no stable IDs, unanswered Qs, anon reviewers) | nearly all nullable; dedup via `UNIQUE(part_id, content_hash)` | untested |
+| A8 | USD only; sale + list price | `price_usd` + nullable `list_price_usd`; no currency column | untested |
+| A9 | **Compatibility directionality**: does PartSelect list compatible models on part pages, compatible parts on model pages, or both — and which side is complete? | The table is direction-agnostic (a pair observed on whatever page), but the per-page staleness janitor assumes **one canonical ingestion direction**: a pair carries one `source_page_id`, so ingesting the same pair from both directions makes page A's janitor able to delete a pair still live on page B. Decide the canonical direction from real HTML before writing the parser; if both directions are needed, additive change (per-source child table or per-direction last_seen). **This is the assumption most likely to force a schema touch-up, and it drives how the crawler walks the site.** | untested |
 
 ## Phases & exit criteria (work strictly in order)
 

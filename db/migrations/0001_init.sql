@@ -123,6 +123,10 @@ CREATE TABLE catalog.models (
 CREATE INDEX ix_models_brand_type ON catalog.models (brand, appliance_type);
 
 -- The hot table: FR-13 compatibility verdicts come from here, never the LLM.
+-- A9: pairs must be ingested from ONE canonical page direction (part page OR
+-- model page — decide from real HTML). A pair carries one source_page_id, so
+-- dual-direction ingestion would let page A's janitor delete a pair still
+-- live on page B. See DECISIONS.md §Phase 1 schema assumptions.
 CREATE TABLE catalog.part_model_compatibility (
     part_id        bigint NOT NULL REFERENCES catalog.parts (part_id) ON DELETE CASCADE,
     model_id       bigint NOT NULL REFERENCES catalog.models (model_id) ON DELETE CASCADE,
