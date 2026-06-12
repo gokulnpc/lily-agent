@@ -9,6 +9,7 @@ dependencies = [
   "lily-gateway",
   "lily-db",
   "lily-crawler",
+  "lily-parsers",
 ]
 
 [tool.uv]
@@ -28,6 +29,7 @@ members = [
   "services/gateway",
   "db",
   "pipeline/crawler",
+  "pipeline/parsers",
 ]
 
 [tool.uv.sources]
@@ -35,6 +37,7 @@ lily-common = { workspace = true }
 lily-gateway = { workspace = true }
 lily-db = { workspace = true }
 lily-crawler = { workspace = true }
+lily-parsers = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -44,18 +47,18 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler"]
+known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src"]
+mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src"]
 explicit_package_bases = true
 namespace_packages = true
 
-# boto3 ships no type stubs; its clients are dynamic. Strict everywhere else.
+# boto3 and selectolax ship no type stubs. Strict everywhere else.
 [[tool.mypy.overrides]]
-module = ["boto3", "boto3.*"]
+module = ["boto3", "boto3.*", "selectolax", "selectolax.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
