@@ -1,4 +1,4 @@
-.PHONY: check fmt evals migrate up down tf-fmt tf-validate deploy-gateway scale-down scale-up
+.PHONY: check fmt evals migrate up down tf-fmt tf-validate deploy-gateway scale-down scale-up frontend-check
 
 # ---- Quality gates ---------------------------------------------------------
 
@@ -11,6 +11,9 @@ check: ## lint + typecheck + unit tests (all services)
 fmt: ## auto-fix lint + formatting
 	uv run ruff check --fix .
 	uv run ruff format .
+
+frontend-check: ## frontend gate: tsc + eslint + vitest (Next.js app)
+	cd frontend && pnpm install --frozen-lockfile && pnpm run check
 
 evals: ## golden-dataset evals (stub until Phase 2)
 	@echo "no evals yet (Phase 2)"

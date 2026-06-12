@@ -6,13 +6,14 @@ Event vocabulary (the contract the frontend builds against):
       One per meaningful graph node as it completes — ephemeral progress.
   event: message  data: {"text", "primary_intent", "blocked",
                          "invalid_identifiers", "citations", "structured",
-                         "quick_replies", "trace"}
+                         "quick_replies", "current_model", "trace"}
       The final assistant turn. `invalid_identifiers` is the deterministic
       validator's verdict (always [] in a healthy turn — FR-4). `citations` is the
       source/citation URLs, `structured` the typed UI cards (product/comparison/
       order, kind-discriminated), and `quick_replies` the suggested action chips —
       all pulled STRUCTURALLY from the tool results (never parsed from prose); the
-      frontend renders them as-is.
+      frontend renders them as-is. `current_model` is the inference-profile id that
+      handled the turn (graph state), surfaced as a model-tier badge.
   event: done     data: {"session_id", "trace_id"}
       Terminal. `trace_id` also returned in the `x-trace-id` response header.
   event: error    data: {"message", "trace_id"}
@@ -119,6 +120,7 @@ async def stream_chat(
                 "citations": state.get("citations", []),
                 "structured": state.get("structured", []),
                 "quick_replies": state.get("quick_replies", []),
+                "current_model": state.get("current_model"),
                 "trace": state.get("trace", []),
             },
         )

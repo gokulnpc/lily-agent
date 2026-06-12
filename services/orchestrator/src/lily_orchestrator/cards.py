@@ -30,7 +30,6 @@ class ProductCard(BaseModel):
     install_difficulty: str | None = None
     rating_avg: float | None = None
     review_count: int | None = None
-    fix_percentage: float | None = None  # set only when sourced from a repair likely-part
 
 
 class ComparisonCard(BaseModel):
@@ -50,9 +49,7 @@ class OrderCard(BaseModel):
     timeline: list[dict[str, Any]] = []
 
 
-def product_from_details(
-    details: PartDetails, *, fix_percentage: float | None = None
-) -> ProductCard:
+def product_from_details(details: PartDetails) -> ProductCard:
     return ProductCard(
         ps_number=details.ps_number,
         name=details.name,
@@ -63,7 +60,6 @@ def product_from_details(
         install_difficulty=details.install_difficulty,
         rating_avg=details.rating_avg,
         review_count=details.review_count,
-        fix_percentage=fix_percentage,
     )
 
 
@@ -92,8 +88,8 @@ def product_from_hit(hit: PartHit) -> ProductCard:
 
 
 def product_from_likely(part: LikelyPart) -> ProductCard:
-    # A repair likely-part is just ps/name/fix% until enriched.
-    return ProductCard(ps_number=part.ps_number, name=part.name, fix_percentage=part.fix_percentage)
+    # A repair likely-part is just ps/name until enriched via get_part_details.
+    return ProductCard(ps_number=part.ps_number, name=part.name)
 
 
 def order_card(result: OrderResult) -> OrderCard:

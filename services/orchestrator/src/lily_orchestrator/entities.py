@@ -33,8 +33,11 @@ def extract_model_numbers(text: str) -> list[str]:
 
 
 _EMAIL_RX = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
-# An order number: digits, optionally after "order"/"#". Kept conservative.
-_ORDER_RX = re.compile(r"\border\s*#?\s*(\d{4,})\b|#\s*(\d{4,})\b", re.IGNORECASE)
+# Order refs are alphanumeric (LILY-1001) or numeric (38123). After "order" or
+# "#", capture a 4+-char alnum/hyphen token that contains at least one digit (the
+# lookahead) so words like "order status" don't match.
+_ORDER_TOKEN = r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{3,})"
+_ORDER_RX = re.compile(rf"\border\s*#?\s*{_ORDER_TOKEN}|#\s*{_ORDER_TOKEN}", re.IGNORECASE)
 
 
 def extract_email(text: str) -> str | None:

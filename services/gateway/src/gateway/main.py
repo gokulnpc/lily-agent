@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 
 from gateway import __version__, telemetry
 from gateway.chat import ChatRequest, stream_chat
+from gateway.feedback import FeedbackRequest, record_feedback
 from lily_common.health import router as health_router
 from lily_common.logging import bind_context, configure_logging
 
@@ -36,6 +37,11 @@ def create_app(*, graph: Any | None = None) -> FastAPI:
     async def metrics() -> Response:
         body, content_type = telemetry.metrics_response()
         return Response(content=body, media_type=content_type)
+
+    @app.post("/feedback", status_code=204)
+    async def feedback(req: FeedbackRequest) -> Response:
+        record_feedback(req)
+        return Response(status_code=204)
 
     @app.post("/chat")
     async def chat(req: ChatRequest, request: Request) -> StreamingResponse:

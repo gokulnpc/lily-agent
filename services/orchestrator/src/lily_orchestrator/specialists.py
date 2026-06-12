@@ -73,18 +73,12 @@ def _ids_in(tool_json: str) -> list[str]:
     return [*extract_ps_numbers(tool_json), *extract_model_numbers(tool_json)]
 
 
-def _enriched_product(
-    deps: Deps, ps: str, *, fix_percentage: float | None = None, fallback: cards.ProductCard
-) -> dict[str, Any]:
+def _enriched_product(deps: Deps, ps: str, *, fallback: cards.ProductCard) -> dict[str, Any]:
     """A uniform ProductCard: enrich the partial source (alternative / likely-part)
     with a deterministic get_part_details lookup so every card has price/stock/
     install/rating when the catalog has it; fall back to the partial otherwise."""
     details = get_part_details(deps.conn, ps)
-    card = (
-        cards.product_from_details(details, fix_percentage=fix_percentage)
-        if details is not None
-        else fallback
-    )
+    card = cards.product_from_details(details) if details is not None else fallback
     return card.model_dump()
 
 
@@ -197,12 +191,7 @@ def repair_specialist(state: GraphState, deps: Deps) -> SpecialistReply:
                 continue
             seen_ps.add(lp.ps_number)
             structured.append(
-                _enriched_product(
-                    deps,
-                    lp.ps_number,
-                    fix_percentage=lp.fix_percentage,
-                    fallback=cards.product_from_likely(lp),
-                )
+                _enriched_product(deps, lp.ps_number, fallback=cards.product_from_likely(lp))
             )
     quick = [f"How do I install {structured[0]['name']}?"] if structured else []
     return SpecialistReply(text, cites, _ids_in(tool_json), structured[:6], quick)

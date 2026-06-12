@@ -20,6 +20,7 @@ TURN_LATENCY = Histogram("lily_chat_turn_seconds", "Full chat-turn latency (s)")
 NODE_LATENCY = Histogram("lily_graph_node_seconds", "Per graph-node latency (s)", ["node"])
 GUARDRAIL_BLOCKS = Counter("lily_guardrail_blocks_total", "Input-guardrail blocks")
 INVALID_IDS = Counter("lily_invalid_identifiers_total", "Turns with invalid identifiers (FR-4)")
+FEEDBACK = Counter("lily_feedback_total", "Per-message feedback (FR-25)", ["rating"])
 
 _TRACER_NAME = "lily.gateway"
 _configured = False
