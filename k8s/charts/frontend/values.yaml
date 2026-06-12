@@ -1,0 +1,37 @@
+# Defaults — environment-specific overrides live in k8s/values/frontend/frontend.yaml
+replicaCount: 1
+
+image:
+  repository: "" # set by deploy (ECR URL)
+  tag: ""        # set by deploy (git sha)
+  pullPolicy: IfNotPresent
+
+containerPort: 3000
+
+serviceAccount:
+  create: true
+  # The frontend needs no AWS access (its only upstream is the in-cluster
+  # gateway), so no IRSA role is annotated.
+
+# Runtime config. The SSE proxy (/api/chat) and feedback proxy (/api/feedback)
+# forward to the gateway Service, cluster-internal — so the chat stream stays
+# same-origin and no public CORS is needed.
+config:
+  gatewayUrl: "http://gateway.agent.svc.cluster.local:80"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# App workloads run on the spot pool (D17).
+nodeSelector:
+  role: stateless
+
+ingress:
+  enabled: true
+  host: ""           # e.g. app.dev.lily-agent.com
+  certificateArn: "" # ACM cert from the infra stack
+  groupName: lily-dev

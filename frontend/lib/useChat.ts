@@ -65,10 +65,11 @@ export function useChat(): ChatController {
               blocked: ev.blocked,
               cards: ev.structured,
               citations: ev.citations,
-              model: ev.current_model,
               traceId: null,
             };
-            setModel(ev.current_model);
+            // Session-level remembered appliance model (FR-5); null leaves it
+            // unchanged so a later modelless turn doesn't clear the chip.
+            if (ev.current_model) setModel(ev.current_model);
             setQuickReplies(ev.quick_replies);
             setMessages((m) => {
               assistantIndex = m.length;
@@ -94,7 +95,6 @@ export function useChat(): ChatController {
                 blocked: true,
                 cards: [],
                 citations: [],
-                model: null,
                 traceId: ev.trace_id ?? null,
               },
             ]);
@@ -110,7 +110,6 @@ export function useChat(): ChatController {
           blocked: true,
           cards: [],
           citations: [],
-          model: null,
           traceId: null,
         },
       ]);

@@ -2,7 +2,6 @@ import type { Card } from "@/lib/types";
 import { Cards } from "@/components/Cards";
 import { Citations } from "@/components/Citations";
 import { Feedback } from "@/components/Feedback";
-import { ModelBadge } from "@/components/ModelBadge";
 
 export interface AssistantMessage {
   role: "assistant";
@@ -10,7 +9,6 @@ export interface AssistantMessage {
   blocked: boolean;
   cards: Card[];
   citations: string[];
-  model: string | null;
   traceId: string | null;
 }
 
@@ -39,7 +37,6 @@ export function MessageBubble({
     <div className="turn-assistant" data-testid="assistant-bubble">
       <div className="assistant-head">
         <span className="assistant-name">Lily</span>
-        <ModelBadge model={message.model} />
       </div>
       {message.text && (
         <div className={`bubble bubble--assistant ${message.blocked ? "is-blocked" : ""}`}>

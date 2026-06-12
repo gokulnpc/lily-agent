@@ -1,0 +1,7 @@
+# Dev overrides for the frontend chart (namespace: frontend).
+# image.repository/tag + ingress.certificateArn injected at deploy (make deploy-frontend).
+ingress:
+  host: app.dev.lily-agent.com
+
+config:
+  gatewayUrl: "http://gateway.agent.svc.cluster.local:80"

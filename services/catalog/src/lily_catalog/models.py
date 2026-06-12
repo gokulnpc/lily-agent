@@ -59,6 +59,19 @@ class PartDetails(_Frozen):
     source_url: str
 
 
+class InstallInfo(_Frozen):
+    """Install-focused projection of a part (FR-18): difficulty, time, and video,
+    for the Repair specialist's install path. No step text — PartSelect part pages
+    carry these attributes, not prose steps (DECISIONS: install→repair gap close)."""
+
+    ps_number: str
+    name: str
+    install_difficulty: str | None = None
+    install_time: str | None = None
+    install_video_url: str | None = None
+    source_url: str
+
+
 class ModelSummary(_Frozen):
     model_number: str
     brand: str

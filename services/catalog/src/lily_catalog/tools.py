@@ -9,6 +9,7 @@ import psycopg
 from lily_catalog.models import (
     CompatibilityRequest,
     CompatibilityResult,
+    InstallInfo,
     ModelSummary,
     PartDetails,
     PartSummary,
@@ -123,6 +124,31 @@ def get_part_details(conn: psycopg.Connection, ps_number: str) -> PartDetails | 
         review_count=r[13],
         image_url=r[14],
         source_url=r[15],
+    )
+
+
+_INSTALL_SQL = """
+SELECT ps_number, name, install_difficulty, install_time, install_video_url, source_url
+FROM catalog.parts WHERE ps_number_norm = catalog.norm_id(%(ps)s)
+"""
+
+
+def get_install_info(conn: psycopg.Connection, ps_number: str) -> InstallInfo | None:
+    """Install attributes (difficulty, time, video) for a specific part — the
+    Repair specialist's install path (FR-18). None if the part isn't in the
+    catalog. The part-detail crawl (Phase 3b) is what populates these columns."""
+    with conn.cursor() as cur:
+        cur.execute(_INSTALL_SQL, {"ps": ps_number})
+        r = cur.fetchone()
+    if r is None:
+        return None
+    return InstallInfo(
+        ps_number=r[0],
+        name=r[1],
+        install_difficulty=r[2],
+        install_time=r[3],
+        install_video_url=r[4],
+        source_url=r[5],
     )
 
 

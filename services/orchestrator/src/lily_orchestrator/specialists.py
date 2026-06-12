@@ -10,13 +10,14 @@ compose Postgres / fake search clients. Live demo uses the real Sonnet model.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 import psycopg
 
 from lily_catalog.models import CompatibilityRequest
-from lily_catalog.tools import check_compatibility, get_part_details
+from lily_catalog.tools import check_compatibility, get_install_info, get_part_details
 from lily_orchestrator import cards, prompts
 from lily_orchestrator.converse import DEFAULT_SPECIALIST_MODEL, converse
 from lily_orchestrator.entities import extract_model_numbers, extract_ps_numbers
@@ -30,6 +31,10 @@ DEFLECTION = (
     "I can only help with refrigerator and dishwasher parts — diagnosis, "
     "compatibility, installation, and orders. Is there a part I can help you find?"
 )
+
+# An explicit install ask (vs a symptom) inside the repair route. Gated together
+# with a resolved part so a lingering session part can't hijack a symptom turn.
+_INSTALL_CUE = re.compile(r"\b(install|installation|installing|replace|replacing|put in)\b", re.I)
 
 
 @dataclass
@@ -108,7 +113,7 @@ def compatibility_specialist(state: GraphState, deps: Deps) -> SpecialistReply:
     if result.verdict == "YES":
         quick = [f"How do I install {result.ps_number}?"]
     elif result.verdict == "NO" and result.alternatives:
-        quick = [f"How do I install {result.alternatives[0].name}?"]
+        quick = [f"How do I install {result.alternatives[0].ps_number}?"]
     elif result.verdict == "MODEL_NOT_FOUND":
         quick = ["Where do I find my model number?"]
     return SpecialistReply(text, cites, _ids_in(tool_json), structured, quick)
@@ -169,6 +174,12 @@ def _compare_specialist(state: GraphState, deps: Deps, ps_numbers: list[str]) ->
 
 
 def repair_specialist(state: GraphState, deps: Deps) -> SpecialistReply:
+    # Install and diagnosis both route here (DECISIONS: install→repair). An install
+    # cue + a resolved specific part (named PS, or "this part" from session) means an
+    # install ask; otherwise it's a symptom to diagnose.
+    part = state.get("current_part")
+    if part and _INSTALL_CUE.search(state["utterance"]):
+        return _install_specialist(state, deps, part)
     if deps.os_client is None or deps.bedrock is None:
         return SpecialistReply(
             "Tell me the symptom and your model number, and I'll suggest likely parts."
@@ -193,8 +204,29 @@ def repair_specialist(state: GraphState, deps: Deps) -> SpecialistReply:
             structured.append(
                 _enriched_product(deps, lp.ps_number, fallback=cards.product_from_likely(lp))
             )
-    quick = [f"How do I install {structured[0]['name']}?"] if structured else []
+    # PS (not name) so clicking the chip resolves current_part → the install path.
+    quick = [f"How do I install {structured[0]['ps_number']}?"] if structured else []
     return SpecialistReply(text, cites, _ids_in(tool_json), structured[:6], quick)
+
+
+def _install_specialist(state: GraphState, deps: Deps, ps: str) -> SpecialistReply:
+    """FR-18: install guidance for one part — difficulty, time, and video, backed
+    by part attributes (get_install_info). No fabricated steps; the source has none."""
+    info = get_install_info(deps.conn, ps)
+    if info is None:
+        return SpecialistReply(
+            f"I couldn't find {ps} in our catalog to pull up install info. "
+            "Can you double-check the PS number?"
+        )
+    tool_json = info.model_dump_json(indent=2)
+    text = _narrate(deps, prompts.INSTALL, state["utterance"], tool_json)
+    # Full product card (price/stock/rating) alongside the install narration.
+    card = _enriched_product(
+        deps, ps, fallback=cards.ProductCard(ps_number=info.ps_number, name=info.name)
+    )
+    return SpecialistReply(
+        text, _dedup([info.source_url]), _ids_in(tool_json), [card], ["Will this fit my model?"]
+    )
 
 
 def order_specialist(state: GraphState, deps: Deps) -> SpecialistReply:

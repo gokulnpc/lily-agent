@@ -5,7 +5,12 @@ from __future__ import annotations
 import psycopg
 
 from lily_catalog.models import CompatibilityRequest
-from lily_catalog.tools import check_compatibility, find_models, get_part_details
+from lily_catalog.tools import (
+    check_compatibility,
+    find_models,
+    get_install_info,
+    get_part_details,
+)
 
 SRC = "https://example.test/section"
 
@@ -108,3 +113,22 @@ def test_find_models(conn: psycopg.Connection) -> None:
     assert exact and exact[0].model_number == "WRS325FDAM04"
     partial = find_models(conn, "WRS325")
     assert any(m.model_number == "WRS325FDAM04" for m in partial)
+
+
+def test_get_install_info(conn: psycopg.Connection) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO catalog.parts (ps_number,name,appliance_type,install_difficulty,"
+            "install_time,install_video_url,source_url,scraped_at) VALUES "
+            "('PS7784018','Water Inlet Valve','refrigerator','Easy','30-60 mins',"
+            "'https://youtu.be/abc',%(s)s,now())",
+            {"s": SRC},
+        )
+    info = get_install_info(conn, "ps 7784018")  # normalization-robust
+    assert info is not None
+    assert info.ps_number == "PS7784018"
+    assert info.install_difficulty == "Easy"
+    assert info.install_time == "30-60 mins"
+    assert info.install_video_url == "https://youtu.be/abc"
+    assert info.source_url == SRC
+    assert get_install_info(conn, "PS00000000") is None

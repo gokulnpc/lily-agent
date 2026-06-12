@@ -14,7 +14,7 @@ const TURN_WIRE =
     citations: ["https://www.partselect.com/PS11752778-Door-Shelf-Bin.htm"],
     structured: [sampleProduct],
     quick_replies: ["How do I install the Door Shelf Bin?"],
-    current_model: "global.anthropic.claude-sonnet-4-6",
+    current_model: "WDT780SAEM1",
     trace: [],
   }) +
   frame("done", { session_id: "s1", trace_id: "trace-abc" });
@@ -60,7 +60,8 @@ describe("Chat (mocked SSE)", () => {
     await screen.findByText(/that part doesn’t fit/);
     expect(screen.getByTestId("product-card")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "partselect.com" })).toBeInTheDocument();
-    expect(screen.getByTestId("model-badge")).toHaveTextContent("Sonnet 4.6");
+    // Session context chip shows the remembered appliance model (FR-5).
+    expect(screen.getByTestId("model-badge")).toHaveTextContent("WDT780SAEM1");
     expect(
       screen.getByRole("button", { name: "How do I install the Door Shelf Bin?" }),
     ).toBeInTheDocument();

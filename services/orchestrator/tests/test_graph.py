@@ -127,3 +127,47 @@ def test_multi_intent_loops_bounded(conn: psycopg.Connection, fake_converse: typ
     assert out["trace"].count("router") == 2
     assert "specialist:product" in out["trace"]
     assert "specialist:compatibility" in out["trace"]
+
+
+def test_per_turn_output_does_not_bleed_across_turns(
+    conn: psycopg.Connection, fake_converse: type
+) -> None:
+    # structured/citations are per-turn: turn 2 must NOT carry turn 1's cards
+    # (they live in the checkpointed state; entry resets them each turn).
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO catalog.parts (ps_number,name,appliance_type,install_difficulty,"
+            "source_url,scraped_at) VALUES "
+            "('PS11752778','Door Shelf Bin','refrigerator','Easy',%(a)s,now()),"
+            "('PS22222222','Drain Pump','dishwasher','Easy',%(b)s,now())",
+            {"a": "https://example.test/a", "b": "https://example.test/b"},
+        )
+    bedrock = fake_converse(
+        {
+            "how much is PS11752778?": ["product"],
+            "how do I install PS22222222?": ["repair"],
+        }
+    )
+    graph = build_graph(deps=Deps(conn=conn, bedrock=bedrock), checkpointer=MemorySaver())
+    cfg = {"configurable": {"thread_id": "bleed-1"}}
+
+    t1 = graph.invoke({"utterance": "how much is PS11752778?"}, cfg)
+    assert [c["ps_number"] for c in t1["structured"]] == ["PS11752778"]
+
+    t2 = graph.invoke({"utterance": "how do I install PS22222222?"}, cfg)
+    # Only this turn's install card — turn 1's card did NOT carry over.
+    assert [c["ps_number"] for c in t2["structured"]] == ["PS22222222"]
+    assert t2["citations"] == ["https://example.test/b"]
+
+
+def test_order_number_not_treated_as_appliance_model(
+    conn: psycopg.Connection, fake_converse: type
+) -> None:
+    # An order number is model-number-shaped; it must NOT populate current_model
+    # (which feeds the FR-5 session model chip).
+    msg = "where is order LILY-1001 email demo@lily.test"
+    bedrock = fake_converse({msg: ["order"]})
+    graph = build_graph(deps=Deps(conn=conn, bedrock=bedrock), checkpointer=MemorySaver())
+    out = graph.invoke({"utterance": msg}, {"configurable": {"thread_id": "ord-1"}})
+    assert out.get("order_number") == "LILY-1001"
+    assert out.get("current_model") is None

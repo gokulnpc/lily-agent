@@ -1,4 +1,4 @@
-.PHONY: check fmt evals migrate up down tf-fmt tf-validate deploy-gateway scale-down scale-up frontend-check
+.PHONY: check fmt evals migrate up down tf-fmt tf-validate deploy-gateway deploy-frontend scale-down scale-up frontend-check
 
 # ---- Quality gates ---------------------------------------------------------
 
@@ -60,6 +60,18 @@ GUARDRAIL_ID  ?= $(shell $(TF_INFRA) guardrail_id)
 
 deploy-redis: ## in-cluster Redis for the checkpointer (agent ns, dev)
 	helm upgrade --install redis k8s/charts/redis --namespace agent --wait --timeout 2m
+
+deploy-frontend: ## build, push to ECR, helm upgrade the Next.js chat UI into frontend
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR_REGISTRY)
+	docker build --platform linux/amd64 -f frontend/Dockerfile -t $(ECR_REGISTRY)/frontend:$(IMAGE_TAG) frontend
+	docker push $(ECR_REGISTRY)/frontend:$(IMAGE_TAG)
+	helm upgrade --install frontend k8s/charts/frontend \
+		--namespace frontend \
+		--values k8s/values/frontend/frontend.yaml \
+		--set image.repository=$(ECR_REGISTRY)/frontend \
+		--set image.tag=$(IMAGE_TAG) \
+		--set ingress.certificateArn=$(CERT_ARN) \
+		--wait --timeout 5m
 
 deploy-gateway: ## build, push to ECR, helm upgrade the SSE gateway (+embedded orchestrator) into agent
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ECR_REGISTRY)

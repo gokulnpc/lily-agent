@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/MessageBubble";
+import { ModelBadge } from "@/components/ModelBadge";
 import { QuickReplies } from "@/components/QuickReplies";
 import { StatusChip } from "@/components/StatusChip";
 import { useChat } from "@/lib/useChat";
@@ -38,6 +39,11 @@ export function Chat() {
 
   return (
     <div className="chat">
+      {chat.model && (
+        <div className="context-bar" data-testid="context-bar">
+          <ModelBadge model={chat.model} />
+        </div>
+      )}
       <div className="chat-scroll" ref={scrollRef} data-testid="chat-scroll">
         {empty ? (
           <div className="chat-empty">

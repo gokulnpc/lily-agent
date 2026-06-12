@@ -32,9 +32,11 @@ describe("Citations", () => {
 });
 
 describe("ModelBadge", () => {
-  it("maps the Sonnet inference profile to a short tier name", () => {
-    render(<ModelBadge model="global.anthropic.claude-sonnet-4-6" />);
-    expect(screen.getByTestId("model-badge")).toHaveTextContent("Sonnet 4.6");
+  it("shows the remembered appliance model (FR-5)", () => {
+    render(<ModelBadge model="WDT780SAEM1" />);
+    const badge = screen.getByTestId("model-badge");
+    expect(badge).toHaveTextContent("Model");
+    expect(badge).toHaveTextContent("WDT780SAEM1");
   });
 
   it("renders nothing without a model", () => {

@@ -12,8 +12,8 @@ Event vocabulary (the contract the frontend builds against):
       source/citation URLs, `structured` the typed UI cards (product/comparison/
       order, kind-discriminated), and `quick_replies` the suggested action chips —
       all pulled STRUCTURALLY from the tool results (never parsed from prose); the
-      frontend renders them as-is. `current_model` is the inference-profile id that
-      handled the turn (graph state), surfaced as a model-tier badge.
+      frontend renders them as-is. `current_model` is the appliance model number
+      Lily is remembering for the session (FR-5), surfaced as a context chip.
   event: done     data: {"session_id", "trace_id"}
       Terminal. `trace_id` also returned in the `x-trace-id` response header.
   event: error    data: {"message", "trace_id"}

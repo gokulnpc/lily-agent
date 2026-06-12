@@ -13,8 +13,8 @@ module "ecr" {
   source = "../../../modules/ecr"
 
   # Extend as services gain images: orchestrator, retrieval, catalog, orders,
-  # notifications, frontend.
-  repository_names = ["gateway", "crawler", "etl"]
+  # notifications.
+  repository_names = ["gateway", "crawler", "etl", "frontend"]
 }
 
 module "dns" {

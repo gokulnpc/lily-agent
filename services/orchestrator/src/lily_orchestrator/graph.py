@@ -47,20 +47,37 @@ def build_graph(
     session state across turns."""
 
     def entry(state: GraphState) -> GraphState:
-        # Reset per-turn fields (trace/intents/pass_count are not session state);
-        # current_model/current_part/summary persist via the checkpointer.
+        # Reset per-turn fields. trace/intents/pass_count AND the output
+        # accumulators (citations/tool_identifiers/structured/quick_replies/
+        # invalid_identifiers) are per-turn — they must start empty each turn, or
+        # the checkpointer carries last turn's cards/citations into this one. Only
+        # current_model/current_part/order_*/summary are session state (persist).
         utterance = state["utterance"]
-        update: GraphState = {"trace": ["entry"], "pass_count": 0, "intents": []}
+        update: GraphState = {
+            "trace": ["entry"],
+            "pass_count": 0,
+            "intents": [],
+            "primary_intent": None,
+            "response_text": "",
+            "blocked": False,
+            "citations": [],
+            "tool_identifiers": [],
+            "structured": [],
+            "quick_replies": [],
+            "invalid_identifiers": [],
+        }
         # Entity resolution: a fresh PS/model in the turn updates session; a
         # pronoun ("it") with no new entity keeps the session value.
         ps = extract_ps_numbers(utterance)
         models = extract_model_numbers(utterance)
-        if ps:
-            update["current_part"] = ps[0]
-        if models:
-            update["current_model"] = models[0]
         email = extract_email(utterance)
         order_number = extract_order_number(utterance)
+        if ps:
+            update["current_part"] = ps[0]
+        # An order number is model-number-shaped; don't let it land in
+        # current_model (it would mislabel the session model chip — FR-5).
+        if models and models[0] != order_number:
+            update["current_model"] = models[0]
         if email:
             update["order_email"] = email
         if order_number:
