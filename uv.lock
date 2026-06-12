@@ -11,6 +11,7 @@ members = [
     "lily-common",
     "lily-crawler",
     "lily-db",
+    "lily-etl",
     "lily-gateway",
     "lily-parsers",
 ]
@@ -395,6 +396,7 @@ dependencies = [
     { name = "lily-common" },
     { name = "lily-crawler" },
     { name = "lily-db" },
+    { name = "lily-etl" },
     { name = "lily-gateway" },
     { name = "lily-parsers" },
 ]
@@ -412,6 +414,7 @@ requires-dist = [
     { name = "lily-common", editable = "libs/common" },
     { name = "lily-crawler", editable = "pipeline/crawler" },
     { name = "lily-db", editable = "db" },
+    { name = "lily-etl", editable = "pipeline/etl" },
     { name = "lily-gateway", editable = "services/gateway" },
     { name = "lily-parsers", editable = "pipeline/parsers" },
 ]
@@ -464,6 +467,27 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "psycopg", extras = ["binary"], specifier = ">=3.2" }]
+
+[[package]]
+name = "lily-etl"
+version = "0.1.0"
+source = { editable = "pipeline/etl" }
+dependencies = [
+    { name = "boto3" },
+    { name = "lily-common" },
+    { name = "lily-db" },
+    { name = "lily-parsers" },
+    { name = "psycopg", extra = ["binary"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boto3", specifier = ">=1.35" },
+    { name = "lily-common", editable = "libs/common" },
+    { name = "lily-db", editable = "db" },
+    { name = "lily-parsers", editable = "pipeline/parsers" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+]
 
 [[package]]
 name = "lily-gateway"

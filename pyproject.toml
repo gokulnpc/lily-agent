@@ -10,6 +10,7 @@ dependencies = [
   "lily-db",
   "lily-crawler",
   "lily-parsers",
+  "lily-etl",
 ]
 
 [tool.uv]
@@ -30,6 +31,7 @@ members = [
   "db",
   "pipeline/crawler",
   "pipeline/parsers",
+  "pipeline/etl",
 ]
 
 [tool.uv.sources]
@@ -38,6 +40,7 @@ lily-gateway = { workspace = true }
 lily-db = { workspace = true }
 lily-crawler = { workspace = true }
 lily-parsers = { workspace = true }
+lily-etl = { workspace = true }
 
 [tool.ruff]
 line-length = 100
@@ -47,12 +50,12 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers"]
+known-first-party = ["lily_common", "gateway", "lily_db", "lily_crawler", "lily_parsers", "lily_etl"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src"]
+mypy_path = ["libs/common/src", "services/gateway/src", "db/src", "pipeline/crawler/src", "pipeline/parsers/src", "pipeline/etl/src"]
 explicit_package_bases = true
 namespace_packages = true
 
