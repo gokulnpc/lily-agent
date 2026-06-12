@@ -8,12 +8,15 @@ resolution-markers = [
 [manifest]
 members = [
     "lily",
+    "lily-catalog",
     "lily-common",
     "lily-crawler",
     "lily-db",
     "lily-etl",
     "lily-gateway",
+    "lily-orders",
     "lily-parsers",
+    "lily-retrieval",
     "lily-search",
 ]
 
@@ -516,12 +519,15 @@ name = "lily"
 version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "lily-catalog" },
     { name = "lily-common" },
     { name = "lily-crawler" },
     { name = "lily-db" },
     { name = "lily-etl" },
     { name = "lily-gateway" },
+    { name = "lily-orders" },
     { name = "lily-parsers" },
+    { name = "lily-retrieval" },
     { name = "lily-search" },
 ]
 
@@ -535,12 +541,15 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "lily-catalog", editable = "services/catalog" },
     { name = "lily-common", editable = "libs/common" },
     { name = "lily-crawler", editable = "pipeline/crawler" },
     { name = "lily-db", editable = "db" },
     { name = "lily-etl", editable = "pipeline/etl" },
     { name = "lily-gateway", editable = "services/gateway" },
+    { name = "lily-orders", editable = "services/orders" },
     { name = "lily-parsers", editable = "pipeline/parsers" },
+    { name = "lily-retrieval", editable = "services/retrieval" },
     { name = "lily-search", editable = "libs/search" },
 ]
 
@@ -553,15 +562,36 @@ dev = [
 ]
 
 [[package]]
+name = "lily-catalog"
+version = "0.1.0"
+source = { editable = "services/catalog" }
+dependencies = [
+    { name = "lily-common" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lily-common", editable = "libs/common" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
 name = "lily-common"
 version = "0.1.0"
 source = { editable = "libs/common" }
 dependencies = [
     { name = "fastapi" },
+    { name = "psycopg", extra = ["binary"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fastapi", specifier = ">=0.115" }]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+]
 
 [[package]]
 name = "lily-crawler"
@@ -636,6 +666,23 @@ requires-dist = [
 ]
 
 [[package]]
+name = "lily-orders"
+version = "0.1.0"
+source = { editable = "services/orders" }
+dependencies = [
+    { name = "lily-common" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lily-common", editable = "libs/common" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
 name = "lily-parsers"
 version = "0.1.0"
 source = { editable = "pipeline/parsers" }
@@ -648,6 +695,27 @@ dependencies = [
 requires-dist = [
     { name = "lily-common", editable = "libs/common" },
     { name = "selectolax", specifier = ">=0.3.21" },
+]
+
+[[package]]
+name = "lily-retrieval"
+version = "0.1.0"
+source = { editable = "services/retrieval" }
+dependencies = [
+    { name = "lily-catalog" },
+    { name = "lily-common" },
+    { name = "lily-search" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lily-catalog", editable = "services/catalog" },
+    { name = "lily-common", editable = "libs/common" },
+    { name = "lily-search", editable = "libs/search" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.9" },
 ]
 
 [[package]]

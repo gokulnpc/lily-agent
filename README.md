@@ -51,9 +51,9 @@ Infra bring-up is documented in [docs/runbooks/phase0.md](docs/runbooks/phase0.m
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundations: monorepo, Terraform (VPC/EKS/ECR/IRSA), platform namespace, CI, compose | **in progress** |
-| 1 | Data: Aurora schema, crawler/parsers, OpenSearch indexing | pending |
-| 2 | Agent core: LangGraph, tools, guardrails, SSE gateway | pending |
+| 0 | Foundations: monorepo, Terraform (VPC/EKS/ECR/IRSA), platform namespace, CI, compose | **done** |
+| 1 | Data: Aurora schema, crawler/parsers, OpenSearch indexing | **done** |
+| 2 | Agent core: LangGraph, tools, guardrails, SSE gateway | next |
 | 3 | Frontend: Next.js chat UI | pending |
 | 4 | Observability: dashboards, logs, alerts, Langfuse | pending |
 | 5 | Quality: 100-case eval CI gate, semantic cache, canary | pending |

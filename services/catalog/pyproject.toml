@@ -1,11 +1,12 @@
 [project]
-name = "lily-common"
+name = "lily-catalog"
 version = "0.1.0"
-description = "Shared utilities for Lily services: logging, health, retry/backoff, db"
+description = "Catalog tools: compatibility, part details, model lookup (typed SQL over Aurora)"
 requires-python = ">=3.12"
 dependencies = [
-  "fastapi>=0.115",
+  "lily-common",
   "psycopg[binary]>=3.2",
+  "pydantic>=2.9",
 ]
 
 [build-system]
@@ -13,4 +14,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lily_common"]
+packages = ["src/lily_catalog"]
