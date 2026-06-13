@@ -36,26 +36,28 @@ export function Feedback({
   return (
     <div className="feedback" data-testid="feedback">
       <span className="feedback-label">Was this helpful?</span>
-      <button
-        type="button"
-        className={`feedback-btn feedback-up ${picked === "up" ? "is-picked" : ""}`}
-        aria-label="Helpful"
-        aria-pressed={picked === "up"}
-        disabled={picked !== null}
-        onClick={() => send("up")}
-      >
-        <ThumbsUpIcon size={16} />
-      </button>
-      <button
-        type="button"
-        className={`feedback-btn feedback-down ${picked === "down" ? "is-picked" : ""}`}
-        aria-label="Not helpful"
-        aria-pressed={picked === "down"}
-        disabled={picked !== null}
-        onClick={() => send("down")}
-      >
-        <ThumbsDownIcon size={16} />
-      </button>
+      <div className="feedback-actions">
+        <button
+          type="button"
+          className={`feedback-btn feedback-up ${picked === "up" ? "is-picked" : ""}`}
+          aria-label="Helpful"
+          aria-pressed={picked === "up"}
+          disabled={picked !== null}
+          onClick={() => send("up")}
+        >
+          <ThumbsUpIcon size={16} />
+        </button>
+        <button
+          type="button"
+          className={`feedback-btn feedback-down ${picked === "down" ? "is-picked" : ""}`}
+          aria-label="Not helpful"
+          aria-pressed={picked === "down"}
+          disabled={picked !== null}
+          onClick={() => send("down")}
+        >
+          <ThumbsDownIcon size={16} />
+        </button>
+      </div>
     </div>
   );
 }

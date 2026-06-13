@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Markdown } from "@/components/Markdown";
+import { safeMarkdownPrefix } from "@/lib/streamingMarkdown";
 
-const CHAR_MS = process.env.NODE_ENV === "test" ? 1 : 28;
+const TICK_MS = process.env.NODE_ENV === "test" ? 1 : 12;
+const CHARS_PER_TICK = 3;
 
 // Client-side text reveal after the validated `message` event (no token deltas on wire).
+// Renders markdown on each visible prefix so bold/lists never show raw asterisks mid-stream.
 export function StreamingText({
   text,
   active,
@@ -28,7 +32,7 @@ export function StreamingText({
     completedRef.current = false;
     let i = 0;
     const id = window.setInterval(() => {
-      i += 1;
+      i = Math.min(i + CHARS_PER_TICK, text.length);
       setVisibleLen(i);
       if (i >= text.length) {
         window.clearInterval(id);
@@ -37,16 +41,19 @@ export function StreamingText({
           onCompleteRef.current();
         }
       }
-    }, CHAR_MS);
+    }, TICK_MS);
     return () => window.clearInterval(id);
   }, [text, active]);
 
-  const slice = text.slice(0, visibleLen);
   const showCursor = active && visibleLen < text.length;
+  const visible = safeMarkdownPrefix(text, visibleLen);
 
   return (
-    <div className="streaming-text" data-testid="streaming-text">
-      {slice}
+    <div
+      className="bubble bubble--assistant md streaming-text"
+      data-testid="streaming-text"
+    >
+      {visible.length > 0 && <Markdown>{visible}</Markdown>}
       {showCursor && <span className="streaming-cursor" aria-hidden="true" />}
     </div>
   );

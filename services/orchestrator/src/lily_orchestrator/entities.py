@@ -47,6 +47,13 @@ def extract_model_numbers(text: str) -> list[str]:
     return list(seen)
 
 
+def strip_identifiers(text: str) -> str:
+    """Remove PS-number and model-shaped tokens from text. The router uses this to
+    detect identifier-only messages (a bare part number with no other words).
+    One source of truth for the identifier shapes — same regexes extraction uses."""
+    return _MODEL_RX.sub(" ", _PS_RX.sub(" ", text))
+
+
 _EMAIL_RX = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
 # Order refs are alphanumeric (LILY-1001) or numeric (38123). After "order" or
 # "#", capture a 4+-char alnum/hyphen token that contains at least one digit (the

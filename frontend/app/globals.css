@@ -325,10 +325,9 @@ body {
   font-weight: 450;
   line-height: 1.6;
   color: var(--ps-text);
-  white-space: pre-wrap;
 }
 
-.streaming-cursor {
+.streaming-text .streaming-cursor {
   display: inline-block;
   width: 9px;
   height: 18px;
@@ -1014,10 +1013,18 @@ body {
   gap: 9px;
 }
 
+.citation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
 .citations-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--ps-text-muted);
+  margin-right: 2px;
 }
 
 .citation-chip {
@@ -1029,6 +1036,7 @@ body {
   border-radius: var(--ps-radius-pill);
   padding: 5px 11px;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .citation-chip--primary {
@@ -1094,13 +1102,22 @@ body {
 .feedback {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 9px;
+  margin-top: 14px;
 }
 
 .feedback-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--ps-text-muted);
+  margin-right: 4px;
+}
+
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .feedback-btn {
@@ -1114,6 +1131,7 @@ body {
   color: var(--ps-text-muted);
   cursor: pointer;
   border-radius: 9px;
+  flex-shrink: 0;
   transition:
     background 0.15s,
     border-color 0.15s,

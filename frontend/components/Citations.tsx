@@ -13,23 +13,25 @@ export function Citations({ urls }: { urls: string[] }) {
   return (
     <div className="citations" data-testid="citations">
       <span className="citations-label">Sources</span>
-      {urls.map((url, i) => {
-        const host = hostOf(url);
-        const isPrimary = i === 0;
-        return (
-          <a
-            key={`${url}-${i}`}
-            className={`citation-chip ${isPrimary ? "citation-chip--primary" : "citation-chip--secondary"}`}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {isPrimary && <span className="citation-dot" aria-hidden="true" />}
-            {host}
-            {!isPrimary && <ExternalLinkIcon size={11} />}
-          </a>
-        );
-      })}
+      <div className="citation-chips">
+        {urls.map((url, i) => {
+          const host = hostOf(url);
+          const isPrimary = i === 0;
+          return (
+            <a
+              key={`${url}-${i}`}
+              className={`citation-chip ${isPrimary ? "citation-chip--primary" : "citation-chip--secondary"}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {isPrimary && <span className="citation-dot" aria-hidden="true" />}
+              {host}
+              {!isPrimary && <ExternalLinkIcon size={11} />}
+            </a>
+          );
+        })}
+      </div>
     </div>
   );
 }

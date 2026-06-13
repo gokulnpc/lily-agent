@@ -32,7 +32,7 @@ describe("StreamingText", () => {
 });
 
 describe("Citations", () => {
-  it("renders primary and secondary citation chips", () => {
+  it("renders primary and secondary citation chips with spacing wrapper", () => {
     render(
       <Citations
         urls={[
@@ -42,6 +42,7 @@ describe("Citations", () => {
       />,
     );
     expect(screen.getByText("Sources")).toBeInTheDocument();
+    expect(document.querySelector(".citation-chips")).not.toBeNull();
     const primary = screen.getByRole("link", { name: "partselect.com" });
     expect(primary).toHaveClass("citation-chip--primary");
     const secondary = screen.getByRole("link", { name: /youtube\.com/ });
@@ -86,6 +87,7 @@ describe("Feedback", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<Feedback traceId="trace-abc" sessionId="s1" />);
+    expect(document.querySelector(".feedback-actions")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Helpful" }));
 
     expect(fetchMock).toHaveBeenCalledWith(

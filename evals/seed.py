@@ -89,6 +89,22 @@ _PARTS = [
         None,
         "WP8531743",
     ),
+    (
+        # Bare-identifier routing fixture: a message that is ONLY this PS number
+        # must route to product and render a card (router-bare-* eval cases).
+        "PS7784018",
+        "Refrigerator Water Inlet Valve",
+        "refrigerator",
+        "Water Inlet Valve",
+        58.34,
+        True,
+        4.5,
+        43,
+        "Moderate",
+        "30 - 60 mins",
+        None,
+        "WPW10408179",
+    ),
 ]
 
 # (model_number, brand, appliance, name)
