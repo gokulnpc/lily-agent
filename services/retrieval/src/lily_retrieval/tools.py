@@ -29,6 +29,32 @@ _SYMPTOM_PARTS_EMPTY_NOTE = (
     "ranked likely parts will appear once the ETL backfill lands."
 )
 
+# Relevance floor for the symptom cluster, RELATIVE to the top hit. Hybrid
+# (BM25+kNN) scores aren't normalized, so a fixed absolute cutoff is fragile —
+# we threshold against the best match instead. Live data shows a sharp score
+# cliff when one symptom clearly dominates: e.g. "ice maker isn't working" scored
+# "Ice maker not making ice" 9.37, "Light not working" 4.98, "Not dispensing
+# water" 0.67. Blindly taking the top-N blended a different symptom's parts (the
+# LED light board, the water-dispense parts) into an ice-maker answer. Keeping
+# only matches within 0.6x of the top score drops that long tail, while a
+# genuinely ambiguous query (two co-equal symptoms, two close scores) still keeps
+# both clusters. 0.6 sits in the wide gap between the cliff (~0.53x here) and a
+# real second symptom (a near-tie clears it).
+_SYMPTOM_RELEVANCE_FLOOR = 0.6
+
+
+def _dominant_cluster(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop symptom matches whose score falls below _SYMPTOM_RELEVANCE_FLOOR x the
+    top score — so only the dominant symptom (or genuinely co-equal ones) supply
+    parts. Hits arrive score-desc from OpenSearch; the first is the top."""
+    if not hits:
+        return hits
+    top = float(hits[0]["_score"])
+    if top <= 0:
+        return hits[:1]
+    cutoff = top * _SYMPTOM_RELEVANCE_FLOOR
+    return [h for h in hits if float(h["_score"]) >= cutoff]
+
 
 def _embed(bedrock: Any, text: str) -> list[float]:
     return call_with_retry(lambda: embed_text(bedrock, text), retryable=is_bedrock_transient)
@@ -89,9 +115,14 @@ def diagnose_symptom(
     )
     res = os_client.search(index=index_name("symptoms"), body=body)
 
+    # Only the dominant symptom cluster supplies parts — a weakly-matched symptom's
+    # parts are a DIFFERENT symptom's parts and must not blend in (the ice-maker
+    # vs light-not-working blend). Dropped matches lose their parts AND citation.
+    hits = _dominant_cluster(res["hits"]["hits"])
+
     matches: list[SymptomMatch] = []
     populated = False
-    for h in res["hits"]["hits"]:
+    for h in hits:
         src = h["_source"]
         parts = _likely_parts(conn, src["title"], request.appliance_type, request.model_number)
         populated = populated or bool(parts)
