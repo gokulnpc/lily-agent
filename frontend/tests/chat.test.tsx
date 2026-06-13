@@ -7,7 +7,7 @@ const TURN_WIRE =
   frame("status", { node: "router", label: "Routing…" }) +
   frame("status", { node: "compatibility", label: "Checking compatibility…" }) +
   frame("message", {
-    text: "No — that part doesn’t fit. Here’s the right one:",
+    text: "No — that part doesn't fit. Here's the right one:",
     primary_intent: "compatibility",
     blocked: false,
     invalid_identifiers: [],
@@ -51,23 +51,60 @@ describe("Chat (mocked SSE)", () => {
     vi.stubGlobal("fetch", mockChatFetch(TURN_WIRE));
   });
 
+  it("renders the golden empty state with starter chips", () => {
+    render(<Chat />);
+    expect(screen.getByText("Hi, I'm Lily.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /How do I install part PS11752778/ })).toBeInTheDocument();
+    expect(document.querySelector(".chat-empty-card")).not.toBeNull();
+  });
+
   it("renders the user turn, assistant text, product card, citation, model badge, and quick reply", async () => {
     render(<Chat />);
     ask("Is PS11752778 compatible with my WDT780SAEM1?");
 
     expect(screen.getByTestId("user-bubble")).toHaveTextContent("Is PS11752778 compatible");
 
-    await screen.findByText(/that part doesn’t fit/);
-    expect(screen.getByTestId("product-card")).toBeInTheDocument();
+    await waitFor(
+      () => {
+        expect(screen.getByText(/that part doesn't fit/)).toBeInTheDocument();
+        expect(screen.getByTestId("product-card")).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
     expect(screen.getByRole("link", { name: "partselect.com" })).toBeInTheDocument();
-    // Session context chip shows the remembered appliance model (FR-5).
     expect(screen.getByTestId("model-badge")).toHaveTextContent("WDT780SAEM1");
     expect(
       screen.getByRole("button", { name: "How do I install the Door Shelf Bin?" }),
     ).toBeInTheDocument();
 
-    // Feedback appears once `done` supplies the trace_id.
     await waitFor(() => expect(screen.getByTestId("feedback")).toBeInTheDocument());
+  });
+
+  it("shows assistant head and status chip while loading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode(
+                frame("status", { node: "compatibility", label: "Checking compatibility…" }),
+              ),
+            );
+          },
+        }),
+        headers: new Headers(),
+      })),
+    );
+
+    render(<Chat />);
+    ask("hello");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("assistant-head")).toBeInTheDocument();
+      expect(screen.getByTestId("status-chip")).toHaveTextContent("Checking compatibility");
+    });
   });
 
   it("sends a quick-reply label as the next turn", async () => {
@@ -76,9 +113,12 @@ describe("Chat (mocked SSE)", () => {
 
     render(<Chat />);
     ask("Is PS11752778 compatible with my WDT780SAEM1?");
-    const chip = await screen.findByRole("button", {
-      name: "How do I install the Door Shelf Bin?",
-    });
+
+    const chip = await screen.findByRole(
+      "button",
+      { name: "How do I install the Door Shelf Bin?" },
+      { timeout: 5000 },
+    );
 
     fireEvent.click(chip);
 
@@ -92,7 +132,7 @@ describe("Chat (mocked SSE)", () => {
     expect(bodyOf(secondCall).message).toBe("How do I install the Door Shelf Bin?");
   });
 
-  it("renders an error frame as a user-facing message", async () => {
+  it("renders an error frame as ErrorCard with trace footer", async () => {
     vi.stubGlobal(
       "fetch",
       mockChatFetch(
@@ -105,7 +145,9 @@ describe("Chat (mocked SSE)", () => {
 
     render(<Chat />);
     ask("hello");
-    await screen.findByText(/unreachable right now/);
+    await screen.findByTestId("error-card");
+    expect(screen.getByText(/unreachable right now/)).toBeInTheDocument();
+    expect(screen.getByTestId("error-trace")).toHaveTextContent("trace-err");
   });
 
   it("keeps session_id stable across turns", async () => {
@@ -114,7 +156,7 @@ describe("Chat (mocked SSE)", () => {
 
     render(<Chat />);
     ask("first");
-    await screen.findByText(/that part doesn’t fit/);
+    await screen.findByText(/that part doesn't fit/, undefined, { timeout: 5000 });
     ask("second");
 
     await waitFor(() => {

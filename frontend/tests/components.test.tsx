@@ -5,6 +5,7 @@ import { Feedback } from "@/components/Feedback";
 import { ModelBadge } from "@/components/ModelBadge";
 import { QuickReplies } from "@/components/QuickReplies";
 import { StatusChip } from "@/components/StatusChip";
+import { StreamingText } from "@/components/StreamingText";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -18,11 +19,33 @@ describe("StatusChip", () => {
   });
 });
 
+describe("StreamingText", () => {
+  it("reveals text and calls onComplete", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const onComplete = vi.fn();
+    render(<StreamingText text="Hello" active onComplete={onComplete} />);
+    expect(screen.getByTestId("streaming-text")).toHaveTextContent("");
+    await vi.runAllTimersAsync();
+    expect(onComplete).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+});
+
 describe("Citations", () => {
-  it("renders one chip per URL labelled by host", () => {
-    render(<Citations urls={["https://www.partselect.com/PS1.htm"]} />);
-    const link = screen.getByRole("link", { name: "partselect.com" });
-    expect(link).toHaveAttribute("href", "https://www.partselect.com/PS1.htm");
+  it("renders primary and secondary citation chips", () => {
+    render(
+      <Citations
+        urls={[
+          "https://www.partselect.com/PS1.htm",
+          "https://www.youtube.com/watch?v=abc",
+        ]}
+      />,
+    );
+    expect(screen.getByText("Sources")).toBeInTheDocument();
+    const primary = screen.getByRole("link", { name: "partselect.com" });
+    expect(primary).toHaveClass("citation-chip--primary");
+    const secondary = screen.getByRole("link", { name: /youtube\.com/ });
+    expect(secondary).toHaveClass("citation-chip--secondary");
   });
 
   it("renders nothing when there are no citations", () => {
@@ -32,11 +55,11 @@ describe("Citations", () => {
 });
 
 describe("ModelBadge", () => {
-  it("shows the remembered appliance model (FR-5)", () => {
+  it("shows the remembered appliance model with the device icon (FR-5)", () => {
     render(<ModelBadge model="WDT780SAEM1" />);
     const badge = screen.getByTestId("model-badge");
-    expect(badge).toHaveTextContent("Model");
     expect(badge).toHaveTextContent("WDT780SAEM1");
+    expect(badge.querySelector("svg")).not.toBeNull();
   });
 
   it("renders nothing without a model", () => {
@@ -72,7 +95,6 @@ describe("Feedback", () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
     expect(body).toMatchObject({ trace_id: "trace-abc", session_id: "s1", rating: "up" });
 
-    // Buttons disable after a pick.
     expect(screen.getByRole("button", { name: "Not helpful" })).toBeDisabled();
   });
 
