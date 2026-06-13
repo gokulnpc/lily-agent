@@ -28,6 +28,7 @@ from lily_orchestrator.entities import (
     extract_model_numbers,
     extract_order_number,
     extract_ps_numbers,
+    norm_id,
 )
 from lily_orchestrator.specialists import SPECIALISTS, Deps
 from lily_orchestrator.state import GraphState
@@ -75,8 +76,11 @@ def build_graph(
         if ps:
             update["current_part"] = ps[0]
         # An order number is model-number-shaped; don't let it land in
-        # current_model (it would mislabel the session model chip — FR-5).
-        if models and models[0] != order_number:
+        # current_model (it would mislabel the session model chip — FR-5). Compare
+        # NORMALIZED forms (extract_* returns norm_id'd tokens; an order number like
+        # "LILY-1001" normalizes to "LILY1001", which is what models[0] would be).
+        order_norm = norm_id(order_number) if order_number else None
+        if models and models[0] != order_norm:
             update["current_model"] = models[0]
         if email:
             update["order_email"] = email

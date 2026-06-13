@@ -2,6 +2,7 @@ import type { Card } from "@/lib/types";
 import { Cards } from "@/components/Cards";
 import { Citations } from "@/components/Citations";
 import { Feedback } from "@/components/Feedback";
+import { Markdown } from "@/components/Markdown";
 
 export interface AssistantMessage {
   role: "assistant";
@@ -39,8 +40,8 @@ export function MessageBubble({
         <span className="assistant-name">Lily</span>
       </div>
       {message.text && (
-        <div className={`bubble bubble--assistant ${message.blocked ? "is-blocked" : ""}`}>
-          {message.text}
+        <div className={`bubble bubble--assistant md ${message.blocked ? "is-blocked" : ""}`}>
+          <Markdown>{message.text}</Markdown>
         </div>
       )}
       <Cards cards={message.cards} />

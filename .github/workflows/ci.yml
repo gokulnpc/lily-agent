@@ -8,6 +8,24 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Postgres so the DB-backed unit tests run for real (they skip without it) and
+    # the offline eval gate (NFR-23/24) exercises the real compatibility SQL.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lily
+          POSTGRES_PASSWORD: lily-local
+          POSTGRES_DB: lily
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      LILY_DATABASE_URL: postgresql://lily:lily-local@localhost:5432/lily
     steps:
       - uses: actions/checkout@v4
 
@@ -20,6 +38,9 @@ jobs:
 
       - name: make check
         run: make check
+
+      - name: Eval gate (offline; NFR-24)
+        run: make evals
 
   docker-build:
     runs-on: ubuntu-latest

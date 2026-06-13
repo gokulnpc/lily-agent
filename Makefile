@@ -15,8 +15,8 @@ fmt: ## auto-fix lint + formatting
 frontend-check: ## frontend gate: tsc + eslint + vitest (Next.js app)
 	cd frontend && pnpm install --frozen-lockfile && pnpm run check
 
-evals: ## golden-dataset evals (stub until Phase 2)
-	@echo "no evals yet (Phase 2)"
+evals: ## golden-dataset offline eval gate (NFR-23/24); needs compose Postgres
+	uv run python -m evals.run
 
 migrate: ## apply pending SQL migrations to the local compose Postgres
 	uv run python -m lily_db.migrate

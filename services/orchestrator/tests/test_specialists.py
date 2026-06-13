@@ -89,7 +89,8 @@ def test_install_path_returns_enriched_card(conn: psycopg.Connection, fake_conve
     assert out.structured and out.structured[0]["kind"] == "product"
     assert out.structured[0]["ps_number"] == "PS11752778"
     assert out.structured[0]["install_difficulty"] == "Really Easy"
-    assert out.citations == [SRC]  # the part page (FR-19)
+    # Part page + install video both cited (the prose no longer pastes URLs).
+    assert out.citations == [SRC, "https://youtu.be/x"]
     assert out.quick_replies == ["Will this fit my model?"]
 
 

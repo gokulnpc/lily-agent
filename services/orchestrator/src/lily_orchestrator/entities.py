@@ -5,19 +5,34 @@ from __future__ import annotations
 
 import re
 
-# PS numbers: PS followed by digits.
-_PS_RX = re.compile(r"\bPS\d{3,}\b", re.IGNORECASE)
-# Model numbers: appliance models are alphanumeric, >=5 chars, with both letters
-# and digits (e.g. WDT780SAEM1, LFSS2612TF0). Excludes pure PS numbers.
+# THE id format-tolerance, defined once. Mirror of the SQL `catalog.norm_id`
+# (db/migrations/0001_init.sql: upper(regexp_replace(raw,'[^A-Za-z0-9]','','g'))).
+# Both extraction (here) and DB lookups (norm_id) collapse the same way, so a
+# user-typed "ps 11752778" / "wrs-325-sdhz" resolves identically to the stored
+# normalized key. Keep this in lockstep with the SQL (test_entities locks it).
+_NON_ALNUM = re.compile(r"[^A-Za-z0-9]")
+
+
+def norm_id(raw: str) -> str:
+    """Canonical id form: strip every non-alphanumeric, uppercase."""
+    return _NON_ALNUM.sub("", raw).upper()
+
+
+# PS numbers: PS + 3+ digits, tolerating the separators norm_id strips
+# (whitespace / hyphen / dot) between the prefix and the digits.
+_PS_RX = re.compile(r"\bPS[\s.\-]*\d{3,}\b", re.IGNORECASE)
+# Model numbers: alphanumeric, >=5 chars, with both letters and digits (e.g.
+# WDT780SAEM1, LFSS2612TF0). Case-insensitive (norm_id uppercases); excludes PS.
 _MODEL_RX = re.compile(
-    r"\b(?=[A-Z0-9-]{5,})(?=[A-Z0-9-]*[A-Z])(?=[A-Z0-9-]*\d)[A-Z][A-Z0-9-]{4,}\b"
+    r"\b(?=[A-Z0-9-]{5,})(?=[A-Z0-9-]*[A-Z])(?=[A-Z0-9-]*\d)[A-Z][A-Z0-9-]{4,}\b",
+    re.IGNORECASE,
 )
 
 
 def extract_ps_numbers(text: str) -> list[str]:
     seen: dict[str, None] = {}
     for m in _PS_RX.finditer(text):
-        seen.setdefault(m.group(0).upper(), None)
+        seen.setdefault(norm_id(m.group(0)), None)
     return list(seen)
 
 
@@ -26,7 +41,7 @@ def extract_model_numbers(text: str) -> list[str]:
     ps = set(extract_ps_numbers(text))
     seen: dict[str, None] = {}
     for m in _MODEL_RX.finditer(text):
-        tok = m.group(0).upper()
+        tok = norm_id(m.group(0))
         if tok not in ps and not tok.startswith("PS"):
             seen.setdefault(tok, None)
     return list(seen)

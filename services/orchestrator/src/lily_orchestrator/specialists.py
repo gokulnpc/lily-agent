@@ -129,8 +129,9 @@ def product_specialist(state: GraphState, deps: Deps) -> SpecialistReply:
     if part:
         details = get_part_details(deps.conn, part)
         if details is None:
+            # Don't echo the unverified id (FR-4: no unvalidated identifier renders).
             return SpecialistReply(
-                f"I couldn't find {part} in our catalog. Can you double-check the PS number?"
+                "I couldn't find that part in our catalog. Can you double-check the PS number?"
             )
         tool_json = details.model_dump_json(indent=2)
         text = _narrate(deps, prompts.PRODUCT, state["utterance"], tool_json)
@@ -214,8 +215,9 @@ def _install_specialist(state: GraphState, deps: Deps, ps: str) -> SpecialistRep
     by part attributes (get_install_info). No fabricated steps; the source has none."""
     info = get_install_info(deps.conn, ps)
     if info is None:
+        # Don't echo the unverified id (FR-4: no unvalidated identifier renders).
         return SpecialistReply(
-            f"I couldn't find {ps} in our catalog to pull up install info. "
+            "I couldn't find that part in our catalog to pull up install info. "
             "Can you double-check the PS number?"
         )
     tool_json = info.model_dump_json(indent=2)
@@ -224,8 +226,14 @@ def _install_specialist(state: GraphState, deps: Deps, ps: str) -> SpecialistRep
     card = _enriched_product(
         deps, ps, fallback=cards.ProductCard(ps_number=info.ps_number, name=info.name)
     )
+    # Part page + the install video both ride as citations (the prose no longer
+    # pastes URLs); _dedup drops the video when null.
     return SpecialistReply(
-        text, _dedup([info.source_url]), _ids_in(tool_json), [card], ["Will this fit my model?"]
+        text,
+        _dedup([info.source_url, info.install_video_url]),
+        _ids_in(tool_json),
+        [card],
+        ["Will this fit my model?"],
     )
 
 
